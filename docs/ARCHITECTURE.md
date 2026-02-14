@@ -4,14 +4,16 @@
 Aegis Agent combines a cloud AI service, a Java/Spring Boot backend, and native mobile clients. It ingests user queries and logs, performs intent classification and log analysis, then resolves issues or escalates to email and JIRA with full context.
 
 ## High-Level Delivery Path
-1. Define purpose and scope for the assistant: OTP/passkey education, log analysis, and escalation.
-2. Select platform and tools: Java/Spring Boot backend, DeepPavlov for intents, SMTP for email, JIRA for tickets.
-3. Set up NLP and intent classification with labeled MFA intents and confidence thresholds.
-4. Integrate external services: log storage, JIRA, and email for escalation workflows.
-5. Design dialog flow and troubleshooting playbooks for common MFA issues.
-6. Build client entry points: Android, iOS, and Windows surfaces for chat and log upload.
-7. Test and refine with real logs and issue scenarios; tune intents and parsing.
-8. Deploy and iterate with telemetry-driven improvements and updated response packs.
+| Step | Focus | Outcome |
+| --- | --- | --- |
+| 1 | Define purpose and scope | OTP/passkey education, log analysis, escalation |
+| 2 | Select platform and tools | Java/Spring Boot, DeepPavlov, SMTP, JIRA |
+| 3 | Set up NLP and intents | Labeled MFA intents and confidence thresholds |
+| 4 | Integrate external services | Log storage, email escalation, ticketing |
+| 5 | Design dialog flow | Playbooks for common MFA issues |
+| 6 | Build client entry points | Android, iOS, Windows chat + log upload |
+| 7 | Test and refine | Real logs, tuned intents and parsing |
+| 8 | Deploy and iterate | Telemetry-driven improvements |
 
 ## Architecture Diagram
 ```mermaid
