@@ -65,53 +65,27 @@ public class JiraClient {
             return validation;
         }
 
+        String projectUrl = properties.getJiraBaseUrl() + "/rest/api/2/project/" + properties.getProjectKey();
         String createmetaUrl = properties.getJiraBaseUrl()
                 + "/rest/api/2/issue/createmeta?projectKeys=" + properties.getProjectKey()
                 + "&expand=projects.issuetypes.fields";
+        String createMetaIssueTypesUrl = properties.getJiraBaseUrl()
+                + "/rest/api/2/issue/createmeta/" + properties.getProjectKey() + "/issuetypes";
         String componentsUrl = properties.getJiraBaseUrl()
                 + "/rest/api/2/project/" + properties.getProjectKey() + "/components";
 
         try {
-            ResponseEntity<Map> metaResp = restTemplate.exchange(createmetaUrl, HttpMethod.GET, new HttpEntity<>(headers(false)), Map.class);
-            Map body = metaResp.getBody();
-            Object projectsObj = body == null ? null : body.get("projects");
-            if (!(projectsObj instanceof List<?> projects) || projects.isEmpty()) {
-                validation.getWarnings().add("Project not found in JIRA create metadata response.");
-                return validation;
-            }
-
+            restTemplate.exchange(projectUrl, HttpMethod.GET, new HttpEntity<>(headers(false)), Map.class);
             validation.setProjectFound(true);
-            Map firstProject = (Map) projects.get(0);
-            Object issueTypesObj = firstProject.get("issuetypes");
-            if (!(issueTypesObj instanceof List<?> issueTypes)) {
-                validation.getWarnings().add("Issue type metadata missing for project.");
-                return validation;
+
+            Map<String, Object> fields = resolveIssueTypeFields(createmetaUrl, createMetaIssueTypesUrl, validation);
+
+            if (fields != null) {
+                validation.setPriorityFieldAvailable(fields.containsKey("priority"));
+                validation.setLabelsFieldAvailable(fields.containsKey("labels"));
+                validation.setComponentsFieldAvailable(fields.containsKey("components"));
+                validation.setReporterFieldAvailable(fields.containsKey("reporter"));
             }
-
-            Map selectedIssueType = null;
-            for (Object it : issueTypes) {
-                if (it instanceof Map<?, ?> issueTypeMap) {
-                    Object name = issueTypeMap.get("name");
-                    if (properties.getJiraIssueType().equals(name)) {
-                        selectedIssueType = (Map) issueTypeMap;
-                        break;
-                    }
-                }
-            }
-
-            if (selectedIssueType == null) {
-                validation.getWarnings().add("Configured issue type not found: " + properties.getJiraIssueType());
-                return validation;
-            }
-
-            validation.setIssueTypeFound(true);
-            Object fieldsObj = selectedIssueType.get("fields");
-            Map<String, Object> fields = fieldsObj instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
-
-            validation.setPriorityFieldAvailable(fields.containsKey("priority"));
-            validation.setLabelsFieldAvailable(fields.containsKey("labels"));
-            validation.setComponentsFieldAvailable(fields.containsKey("components"));
-            validation.setReporterFieldAvailable(fields.containsKey("reporter"));
 
             ResponseEntity<List> componentsResp = restTemplate.exchange(componentsUrl, HttpMethod.GET, new HttpEntity<>(headers(false)), List.class);
             List<Map<String, Object>> components = componentsResp.getBody() == null ? List.of() : componentsResp.getBody();
@@ -140,6 +114,72 @@ public class JiraClient {
         }
 
         return validation;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> resolveIssueTypeFields(
+            String createmetaUrl,
+            String createMetaIssueTypesUrl,
+            JiraValidationResponse validation
+    ) {
+        try {
+            ResponseEntity<Map> metaResp = restTemplate.exchange(createmetaUrl, HttpMethod.GET, new HttpEntity<>(headers(false)), Map.class);
+            Map body = metaResp.getBody();
+            Object projectsObj = body == null ? null : body.get("projects");
+            if (!(projectsObj instanceof List<?> projects) || projects.isEmpty()) {
+                return null;
+            }
+
+            Map firstProject = (Map) projects.get(0);
+            Object issueTypesObj = firstProject.get("issuetypes");
+            if (!(issueTypesObj instanceof List<?> issueTypes)) {
+                return null;
+            }
+
+            Map selectedIssueType = findIssueType(issueTypes, properties.getJiraIssueType());
+            if (selectedIssueType == null) {
+                validation.getWarnings().add("Configured issue type not found: " + properties.getJiraIssueType());
+                return null;
+            }
+
+            validation.setIssueTypeFound(true);
+            Object fieldsObj = selectedIssueType.get("fields");
+            return fieldsObj instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
+        } catch (RestClientException ex) {
+            try {
+                ResponseEntity<List> issueTypeResp = restTemplate.exchange(createMetaIssueTypesUrl, HttpMethod.GET, new HttpEntity<>(headers(false)), List.class);
+                List<Map<String, Object>> issueTypes = issueTypeResp.getBody() == null ? List.of() : issueTypeResp.getBody();
+                Map selectedIssueType = findIssueType(issueTypes, properties.getJiraIssueType());
+                if (selectedIssueType == null) {
+                    validation.getWarnings().add("Configured issue type not found: " + properties.getJiraIssueType());
+                    return null;
+                }
+
+                validation.setIssueTypeFound(true);
+                Object fields = selectedIssueType.get("fields");
+                if (fields instanceof Map<?, ?> map) {
+                    return (Map<String, Object>) map;
+                }
+
+                validation.getWarnings().add("Issue type fields are not exposed by this JIRA endpoint.");
+                return Map.of();
+            } catch (RestClientException fallbackEx) {
+                validation.getWarnings().add("JIRA metadata lookup failed: " + fallbackEx.getMessage());
+                return null;
+            }
+        }
+    }
+
+    private Map findIssueType(List<?> issueTypes, String targetName) {
+        for (Object it : issueTypes) {
+            if (it instanceof Map<?, ?> issueTypeMap) {
+                Object name = issueTypeMap.get("name");
+                if (targetName.equals(name)) {
+                    return (Map) issueTypeMap;
+                }
+            }
+        }
+        return null;
     }
 
     private String createIssue(ChatRequest request, AnalysisResult result) {
@@ -202,8 +242,19 @@ public class JiraClient {
 
     private HttpHeaders headers(boolean multipart) {
         HttpHeaders headers = new HttpHeaders();
-        String raw = properties.getJiraUser() + ":" + properties.getJiraApiToken();
-        headers.set("Authorization", "Basic " + Base64.getEncoder().encodeToString(raw.getBytes(StandardCharsets.UTF_8)));
+
+        String authType = properties.getJiraAuthType() == null ? "basic" : properties.getJiraAuthType().trim().toLowerCase();
+        if ("bearer".equals(authType)) {
+            if (properties.getJiraApiToken() != null && !properties.getJiraApiToken().isBlank()) {
+                headers.set("Authorization", "Bearer " + properties.getJiraApiToken());
+            }
+        } else {
+            String user = properties.getJiraUser() == null ? "" : properties.getJiraUser();
+            String token = properties.getJiraApiToken() == null ? "" : properties.getJiraApiToken();
+            String raw = user + ":" + token;
+            headers.set("Authorization", "Basic " + Base64.getEncoder().encodeToString(raw.getBytes(StandardCharsets.UTF_8)));
+        }
+
         headers.setAccept(MediaType.parseMediaTypes("application/json"));
         headers.setContentType(multipart ? MediaType.MULTIPART_FORM_DATA : MediaType.APPLICATION_JSON);
         return headers;

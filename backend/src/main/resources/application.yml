@@ -9,10 +9,11 @@ management:
 
 aegis:
   confidence-threshold: 0.8
-  project-key: AEGIS
+  project-key: ${JIRA_PROJECT_KEY:AEGIS}
   jira-base-url: ${JIRA_BASE_URL:}
   jira-user: ${JIRA_USER:}
   jira-api-token: ${JIRA_API_TOKEN:}
+  jira-auth-type: ${JIRA_AUTH_TYPE:basic}
   jira-reporter: ${JIRA_REPORTER:support-bot}
   jira-reporter-account-id: ${JIRA_REPORTER_ACCOUNT_ID:}
   jira-issue-type: ${JIRA_ISSUE_TYPE:Task}
@@ -41,5 +42,6 @@ spring:
     username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
     properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
+      mail.smtp.auth: ${SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}
+      mail.smtp.starttls.required: ${SMTP_STARTTLS:false}

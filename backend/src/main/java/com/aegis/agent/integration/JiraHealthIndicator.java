@@ -24,7 +24,7 @@ public class JiraHealthIndicator implements HealthIndicator {
         }
 
         JiraValidationResponse validation = jiraClient.validateFieldMapping();
-        boolean up = validation.isJiraConfigured() && validation.isProjectFound() && validation.isIssueTypeFound();
+        boolean up = validation.isJiraConfigured() && validation.isProjectFound();
 
         Health.Builder builder = up ? Health.up() : Health.down();
         return builder

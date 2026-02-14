@@ -13,6 +13,7 @@ public class AegisProperties {
     private String jiraBaseUrl;
     private String jiraUser;
     private String jiraApiToken;
+    private String jiraAuthType = "basic";
     private String jiraReporter = "support-bot";
     private String jiraReporterAccountId;
     private String jiraIssueType = "Task";
@@ -71,6 +72,14 @@ public class AegisProperties {
 
     public void setJiraApiToken(String jiraApiToken) {
         this.jiraApiToken = jiraApiToken;
+    }
+
+    public String getJiraAuthType() {
+        return jiraAuthType;
+    }
+
+    public void setJiraAuthType(String jiraAuthType) {
+        this.jiraAuthType = jiraAuthType;
     }
 
     public String getJiraReporter() {

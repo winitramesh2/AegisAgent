@@ -21,6 +21,7 @@ __pycache__/
 *.pyc
 .venv/
 ai/deeppavlov/models/
+runtime/
 
 # Env
 .env
