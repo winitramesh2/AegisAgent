@@ -1,9 +1,13 @@
-# Architecture
+# Architecture: Aegis Agent
 
-## System Overview
+> Detailed system design, core flows, and technology decisions.
+
+## 1) System Overview
+
 Aegis Agent combines a cloud AI service, a Java/Spring Boot backend, and native mobile clients. It ingests user queries and logs, performs intent classification and log analysis, then resolves issues or escalates to email and JIRA with full context.
 
-## High-Level Delivery Path
+## 2) High-Level Delivery Path
+
 | Step | Focus | Outcome |
 | --- | --- | --- |
 | 1 | Define purpose and scope | OTP/passkey education, log analysis, escalation |
@@ -15,7 +19,10 @@ Aegis Agent combines a cloud AI service, a Java/Spring Boot backend, and native 
 | 7 | Test and refine | Real logs, tuned intents and parsing |
 | 8 | Deploy and iterate | Telemetry-driven improvements |
 
-## Architecture Diagram
+---
+
+## 3) Architecture Diagram
+
 ```mermaid
 flowchart LR
   User[User] --> Mobile[Mobile Apps]
@@ -42,7 +49,10 @@ flowchart LR
   API --> Windows
 ```
 
-## Flow Chart
+---
+
+## 4) Runtime Flow
+
 ```mermaid
 flowchart TD
   Start[User Query] --> Intent[Intent Classification]
@@ -55,7 +65,10 @@ flowchart TD
   Escalate --> End[Return Ticket ID]
 ```
 
-## Sequence Diagram
+---
+
+## 5) Sequence Diagram
+
 ```mermaid
 sequenceDiagram
   participant U as User
@@ -82,7 +95,10 @@ sequenceDiagram
   end
 ```
 
-## Tech Stack (IAM-Focused)
+---
+
+## 6) Tech Stack (IAM-Focused)
+
 - Backend: Java 17, Spring Boot 3.x, REST APIs
 - AI Engine (Cloud): DeepPavlov (BERT intent classifier)
 - On-Device AI:
@@ -94,7 +110,10 @@ sequenceDiagram
 - Email: SMTP
 - JIRA: Cloud REST API + Attachments API
 
-## Competitive Landscape (High-Level)
+---
+
+## 7) Competitive Landscape (High-Level)
+
 **What strong competitors do well**
 - Provide multi-channel intake (in-app chat, email, web portal).
 - Correlate IdP logs with device telemetry to reduce false escalation.
@@ -106,13 +125,19 @@ sequenceDiagram
 - Most L1 systems do not attach raw logs with standardized root-cause summaries.
 - IAM domain expertise is often generic rather than MFA-specific.
 
-## Recommendations
+---
+
+## 8) Recommendations
+
 - Keep DeepPavlov for deterministic intent classification and data control.
 - Add retrieval (Haystack) if knowledge base growth becomes a priority.
 - Adopt ELK or Splunk for cross-correlation of IdP + device logs.
 - Keep on-device inference for top intents to reduce server load and improve UX.
 
-## Security and Responsible AI
+---
+
+## 9) Security and Responsible AI
+
 **Data protection**
 - PII is redacted, identifiers are hashed, and logs are encrypted in transit and at rest.
 - Short-lived signed URLs protect uploads and limit exposure windows.
@@ -134,7 +159,10 @@ sequenceDiagram
 - GDPR alignment is maintained via data minimization, retention limits, and deletion support.
 - HIPAA (if PHI is present) is supported through encryption, restricted access, and access logging.
 
-## JIRA Escalation Payload (Required Fields)
+---
+
+## 10) JIRA Escalation Payload (Required Fields)
+
 - summary
 - priority
 - labels
@@ -143,5 +171,8 @@ sequenceDiagram
 - description (auto-built from chat + logs + device context)
 - attachment (raw log file)
 
-## Phase 2 Hybrid Intelligence
+---
+
+## 11) Phase 2 Hybrid Intelligence
+
 Local-first intent classification is used for offline support and lower latency. If local confidence is below threshold, the request is forwarded to the cloud model.

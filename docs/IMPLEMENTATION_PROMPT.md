@@ -1,129 +1,166 @@
-# Comprehensive Implementation Prompt
+# Implementation Prompt: Aegis Agent
 
-You are implementing Aegis Agent, an intelligent L1 support agent for Authenticator Mobile and Windows applications. The MFA apps generate OTP codes, passkeys, and approve login requests. The agent educates users, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to email and JIRA with full context.
+> Use this as the master build prompt for engineering and AI-assisted implementation.
 
-## Objectives
-- Educate users about MFA usage (OTP, passkeys, and approval flows).
-- Automate troubleshooting for common issues.
-- Analyze logs to identify root cause and fix actions.
-- Escalate unresolved issues to email and JIRA with full context and raw log attachment.
+## 1) System Role and Objective
 
-## Scope
-**Phase 1 (Core)**
-- Cloud-centric logic using Java/Spring Boot + DeepPavlov.
-- Native apps (Android/iOS) for chat + log upload.
-- JIRA escalation with required fields.
+You are implementing **Aegis Agent**, an intelligent L1 support assistant for Authenticator Mobile and Windows applications. The apps support OTP, passkeys, and login approvals. The assistant educates users, troubleshoots issues, analyzes logs, and escalates unresolved cases to email and JIRA with full context.
 
-**Phase 2 (Hybrid AI)**
-- On-device inference for offline support and lower latency.
-- TFLite/Gemini Nano (Android) and Core ML (iOS).
-- Local response packs synced from backend.
+---
 
-## Workflow
-1. User asks a question or reports a problem.
+## 2) Core Outcomes
+
+- Educate users on OTP/passkey/approval workflows.
+- Detect and classify common support intents.
+- Analyze logs to identify root cause and fix action.
+- Escalate unresolved issues to email and JIRA with raw log attachment.
+
+---
+
+## 3) Scope
+
+### Phase 1 (Core)
+- Cloud-centric backend with Java/Spring Boot + DeepPavlov.
+- Native app integrations for Android, iOS, Windows.
+- Email + JIRA escalation flow.
+
+### Phase 2 (Hybrid AI)
+- On-device inference for low latency and offline support.
+- Android: TensorFlow Lite
+- iOS: Core ML
+- Windows: Windows ML (ONNX Runtime)
+- Response packs synced from backend.
+
+---
+
+## 4) User Workflow
+
+1. User asks a question or reports an issue.
 2. AI classifies intent and confidence.
-3. Log analysis detects known error patterns.
-4. Provide fix guidance or escalate to email and JIRA.
+3. Log analysis detects known patterns.
+4. Agent provides fix guidance or escalates to email and JIRA.
 
-## Phase 1 Requirements
-### AI Engine (DeepPavlov)
-- Run as Docker container.
-- BERT intent classifier.
-- Training data in `train_data.json` with intents:
+---
+
+## 5) Phase 1 Requirements
+
+### 5.1 AI Engine (DeepPavlov)
+- Run in Docker.
+- Use BERT intent classifier.
+- Train with `train_data.json` using intents:
   - EnrollmentFailure
   - GenerateOTP
   - TokenSyncError
   - ConfigIssue
   - ServerUnreachable
-- `train_model.py` fine-tunes and saves artifacts to a persistent volume.
+- `train_model.py` fine-tunes and stores artifacts in persistent volume.
 
-### Backend Core (Java/Spring Boot)
+### 5.2 Backend Core (Java/Spring Boot)
 - `POST /api/chat`
   - Input: user query + device metadata
   - Output: intent + confidence + recommended action
 - `POST /api/analyze-logs`
-  - Input: log files
+  - Input: log file
   - Output: `{ rootCause, fixAction }`
-- Log parsing patterns:
-  - Error 503
-  - Cert_Invalid
-  - Time_Skew
+- Detect known log patterns:
+  - `Error 503`
+  - `Cert_Invalid`
+  - `Time_Skew`
 
-### Email + JIRA Escalation
-- Trigger when confidence low or troubleshooting fails.
-- Send escalation email with summary and log analysis context.
-- Create ticket via JIRA Cloud REST API.
-- Required fields:
+### 5.3 Email + JIRA Escalation
+- Trigger when confidence is low or troubleshooting fails.
+- Send escalation email with summary and troubleshooting context.
+- Create JIRA issue via Cloud REST API.
+- Include required fields:
   - summary
   - priority
   - labels
   - components
   - reporter
-  - description (includes chat history, log analysis, device info)
-- Attach raw log file using JIRA Attachments API.
+  - description (chat history + log analysis + device context)
+- Attach raw log with JIRA Attachments API.
 - Return ticket ID to user.
 
-### Native Apps (Phase 1)
+### 5.4 Native App Integrations
+
 **Android**
-- Kotlin/Compose chat screen.
-- Retrofit for networking.
-- Collect `Build.MODEL`, `VERSION.SDK_INT`.
-- Native file picker for log uploads.
+- Kotlin/Compose chat UI
+- Retrofit networking
+- Capture `Build.MODEL`, `VERSION.SDK_INT`
+- Native file picker for logs
 
 **iOS**
-- Swift/SwiftUI chat view.
-- URLSession for networking.
-- Collect `UIDevice.current` info.
-- Native file picker for log uploads.
+- Swift/SwiftUI chat UI
+- URLSession networking
+- Capture `UIDevice.current` metadata
+- Native file picker for logs
 
-### Windows App
-- Sends the same `/api/chat` and `/api/analyze-logs` payloads.
+**Windows**
+- WinUI 3 surface
+- Same payload structure as mobile for `/api/chat` and `/api/analyze-logs`
 
-## Phase 2 Requirements (Hybrid AI)
-### Android
-- Export a lightweight model to TFLite.
-- Use AI Edge SDK or Gemini Nano (AICore) for local inference.
+---
+
+## 6) Phase 2 Requirements (Hybrid AI)
+
+### 6.1 Android
+- TFLite model (quantized INT8, target ~28 MB)
 - Local-first logic:
-  - confidence > 0.8 -> respond locally from cache
-  - confidence <= 0.8 -> call cloud backend
+  - confidence `> 0.8` -> local response
+  - confidence `<= 0.8` -> cloud fallback
 
-### iOS
-- Convert to Core ML (`.mlpackage`).
-- Use Natural Language framework.
-- Apply the same local-first routing.
+### 6.2 iOS
+- Core ML model (FP16, target ~55 MB)
+- Same local-first confidence routing
 
-### Response Pack Sync
-- Mobile apps periodically fetch JSON response packs.
-- Local packs allow offline responses without app updates.
+### 6.3 Windows
+- Windows ML via ONNX Runtime (target ~110 MB)
+- Same local-first confidence routing
 
-## Logging Schema
-- Common fields: timestamp, level, app, component, user_id (hashed), device_id (hashed), session_id, request_id
-- Mobile fields: os_version, device_model, app_version, network_type
-- Backend fields: endpoint, intent, confidence, root_cause, fix_action, jira_ticket_id
-- Redact email and phone numbers; hash identifiers.
+### 6.4 Response Pack Sync
+- Periodically fetch JSON response packs from backend.
+- Use local packs for offline answers without app updates.
 
-## Acceptance Criteria
-**Phase 1**
-- Intent classifier >= 85% validation accuracy.
-- Chat API returns intent + confidence + fix guidance.
+---
+
+## 7) Logging and Data Safety
+
+- Common log fields: `timestamp`, `level`, `app`, `component`, `user_id` (hashed), `device_id` (hashed), `session_id`, `request_id`
+- Client fields: `os_version`, `device_model`, `app_version`, `network_type`
+- Backend fields: `endpoint`, `intent`, `confidence`, `root_cause`, `fix_action`, `jira_ticket_id`
+- Redact phone/email and sensitive tokens before storage or escalation.
+
+---
+
+## 8) Acceptance Criteria
+
+### Phase 1
+- Intent classifier accuracy >= 85%.
+- Chat API returns intent + confidence + action.
 - Log analyzer resolves known patterns.
-- JIRA ticket created with required fields and raw log attachment.
-- Android and iOS chat + log upload functional.
+- Email + JIRA escalation works with raw log attachment.
+- Android/iOS/Windows clients can upload logs.
 
-**Phase 2**
+### Phase 2
 - Local-first inference works offline for top intents.
-- Confidence routing is enforced.
-- Response pack sync works without app updates.
+- Confidence threshold routing is enforced.
+- Response pack sync updates without app release.
 
-## Testing Expectations
-- Unit: training pipeline, regex rules, JIRA payload validation.
-- Integration: chat pipeline, log upload, ticket creation.
-- E2E: user issue resolved, escalation path, offline flow.
-- Non-functional: latency < 2s average, PII redaction verified.
+---
 
-## Deliverables
+## 9) Testing Expectations
+
+- Unit: training pipeline, regex rules, escalation payload validation.
+- Integration: chat flow, log upload flow, email/JIRA flow.
+- E2E: issue resolution path, escalation path, offline path.
+- Non-functional: average latency < 2s, PII redaction validated.
+
+---
+
+## 10) Deliverables
+
 - DeepPavlov training assets
 - Java backend services
-- Mobile clients (Android/iOS)
-- Email and JIRA escalation integration
+- Android, iOS, and Windows client integrations
+- Email + JIRA escalation integration
 - Documentation under `docs/`

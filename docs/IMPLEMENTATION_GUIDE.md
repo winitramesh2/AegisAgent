@@ -1,14 +1,21 @@
-# Detailed Implementation Guide
+# Implementation Guide: Aegis Agent
 
-This guide is written for beginners and walks through the Phase 1 core build and the Phase 2 hybrid AI extension for OTP and passkey-based authentication support.
+> Beginner-friendly build guide for Phase 1 (cloud core) and Phase 2 (hybrid on-device AI).
 
-## Phase 1: Core Foundation
+## 1) Objective
 
-### 1) AI Engine (DeepPavlov)
-**Goal**: Cloud model is the source of truth for complex queries.
+Build an intelligent L1 support bot for Authenticator Mobile and Windows apps that can educate users, troubleshoot common MFA issues, analyze logs, and escalate unresolved issues to email and JIRA.
+
+---
+
+## 2) Phase 1 - Core Foundation
+
+### 2.1 AI Engine (DeepPavlov)
+
+**Goal**: Keep the cloud model as the source of truth for complex intent classification.
 
 **Steps**
-1. Deploy DeepPavlov in a Docker container.
+1. Deploy DeepPavlov in Docker.
 2. Create `train_data.json` with labeled intents:
    - EnrollmentFailure
    - GenerateOTP
@@ -17,11 +24,12 @@ This guide is written for beginners and walks through the Phase 1 core build and
    - ServerUnreachable
 3. Implement `train_model.py` to:
    - Load training data
-   - Fine-tune the BERT classifier
-   - Save model artifacts to a persistent volume
-4. Expose an inference endpoint for intent + confidence.
+   - Fine-tune BERT classifier
+   - Save artifacts to persistent volume
+4. Expose inference endpoint returning intent + confidence.
 
-### 2) Backend Core (Java/Spring Boot)
+### 2.2 Backend Core (Java/Spring Boot)
+
 **API Gateway**
 - `POST /api/chat`
   - Input: user query, app metadata, device info
@@ -31,81 +39,87 @@ This guide is written for beginners and walks through the Phase 1 core build and
   - Output: `{ rootCause, fixAction }`
 
 **Log Analysis Engine**
-- Regex patterns:
-  - `Error 503` -> "Service unavailable or upstream outage"
-  - `Cert_Invalid` -> "Device certificate invalid or expired"
-  - `Time_Skew` -> "Device time out of sync"
-- Return JSON for troubleshooting responses.
+- Parse known errors:
+  - `Error 503` -> Service unavailable or upstream outage
+  - `Cert_Invalid` -> Device certificate invalid or expired
+  - `Time_Skew` -> Device time out of sync
+- Return structured troubleshooting JSON.
 
 **Email + JIRA Escalation Service**
 - Trigger escalation when:
-  - Confidence below threshold
-  - Log analysis returns unknown root cause
+  - Confidence is below threshold
+  - Root cause remains unknown
   - User still fails after guided steps
-- Send escalation email with summary and log analysis context.
-- Required fields for ticket creation:
+- Send escalation email summary with issue context.
+- Create JIRA ticket with required fields:
   - summary
   - priority
   - labels
   - components
   - reporter
-  - description (auto-built from chat history + device data + logs)
+  - description (chat + logs + device context)
 - Attach raw log file via JIRA Attachments API.
-- Return ticket ID to the user (example: `AEGIS-1234`).
+- Return ticket ID to user (for example: `AEGIS-1234`).
 
-### 3) Mobile Clients (Android + iOS)
+### 2.3 Client Apps (Android, iOS, Windows)
+
 **Android (Kotlin/Compose)**
 - Build `ChatScreen` and integrate Retrofit.
-- Capture `Build.MODEL`, `VERSION.SDK_INT`.
-- Add a native file picker to upload logs.
+- Capture `Build.MODEL` and `VERSION.SDK_INT`.
+- Add native file picker for log uploads.
 
 **iOS (Swift/SwiftUI)**
 - Build `ChatView` and integrate URLSession.
 - Capture `UIDevice.current` metadata.
-- Add a native file picker to upload logs.
+- Add native file picker for log uploads.
 
-**Windows App**
-- Send user queries and log files to the same backend APIs.
-- Use identical payload structure to keep consistency across platforms.
+**Windows (WinUI 3)**
+- Send queries/logs to same backend APIs.
+- Keep payload format consistent with mobile apps.
 
-## Phase 2: Hybrid AI (On-Device)
+---
 
-### 1) Android Local-First AI
-- Export a lightweight intent model to TFLite.
-- Integrate via AI Edge SDK or Gemini Nano (AICore).
-- If confidence > 0.8:
-  - Serve cached response locally.
-- Else:
-  - Fallback to cloud model.
+## 3) Phase 2 - Hybrid On-Device AI
 
-### 2) iOS Local-First AI
-- Convert model to Core ML (`.mlpackage`).
-- Use Natural Language framework for inference.
-- Same confidence routing logic as Android.
+### 3.1 Android Local-First Inference
+- Deploy TensorFlow Lite model (quantized INT8, target ~28 MB).
+- If confidence `> 0.8`: return local cached response.
+- Else: fallback to cloud model.
 
-### 3) Local Response Pack Sync
-- Define a JSON response pack format (intent -> response).
-- Mobile apps periodically fetch updates from backend.
-- Use cached responses for offline support.
+### 3.2 iOS Local-First Inference
+- Deploy Core ML model (FP16, target ~55 MB).
+- Apply same confidence routing as Android.
 
-## Recommended Logging Schema
-**Common Fields**
+### 3.3 Windows Local-First Inference
+- Deploy Windows ML model via ONNX Runtime (target ~110 MB).
+- Apply same confidence routing and fallback logic.
+
+### 3.4 Local Response Pack Sync
+- Define JSON response pack (`intent -> response`).
+- Apps fetch updates periodically from backend.
+- Cached packs support offline troubleshooting without app update.
+
+---
+
+## 4) Logging Schema
+
+**Common fields**
 - timestamp (ISO 8601)
 - level (INFO/WARN/ERROR)
-- app (android/ios/backend/windows)
+- app (android/ios/windows/backend)
 - component (chat/log-analyzer/jira-service)
 - user_id (hashed)
 - device_id (hashed)
 - session_id
 - request_id
 
-**Mobile Fields**
+**Mobile/Windows fields**
 - os_version
 - device_model
 - app_version
 - network_type (wifi/cell/offline)
 
-**Backend Fields**
+**Backend fields**
 - endpoint
 - intent
 - confidence
@@ -113,40 +127,46 @@ This guide is written for beginners and walks through the Phase 1 core build and
 - fix_action
 - jira_ticket_id
 
-**PII Safety**
+**PII safety**
 - Redact phone and email.
 - Hash user identifiers.
 
-## Acceptance Criteria
+---
+
+## 5) Acceptance Criteria
+
 **Phase 1**
-- Intent model accuracy >= 85% on validation.
+- Intent model accuracy >= 85% on validation set.
 - `/api/chat` returns structured response with confidence.
 - `/api/analyze-logs` resolves known patterns.
-- Email escalation sends a summary payload.
-- JIRA ticket creation includes required fields and raw log attachment.
-- Android and iOS apps can upload logs and send metadata.
+- Email escalation sends summary payload.
+- JIRA ticket includes required fields and raw log attachment.
+- Android/iOS/Windows clients can upload logs and send metadata.
 
 **Phase 2**
 - Local-first inference works offline for top intents.
-- Confidence routing is enforced.
-- Response Pack sync works without app updates.
+- Confidence routing is enforced consistently.
+- Response pack sync works without app updates.
 
-## Test Plan
-**Unit Tests**
-- Training pipeline data validation.
-- Regex log parsing coverage.
-- JIRA payload validation.
+---
 
-**Integration Tests**
-- Chat API -> intent classification -> response.
-- Log upload -> analyzer -> response.
-- JIRA ticket creation + attachment.
+## 6) Test Plan
 
-**E2E Tests**
-- User issue -> resolution without escalation.
-- User issue -> escalation with ticket ID.
-- Offline mode with local response pack.
+**Unit tests**
+- Training data + model pipeline validation
+- Regex parser coverage for known error signatures
+- JIRA payload and attachment validation
 
-**Non-Functional Tests**
-- Latency: average response < 2 seconds.
-- Security: PII redaction verified.
+**Integration tests**
+- Chat API -> intent inference -> response
+- Log upload -> analyzer -> troubleshooting output
+- Email escalation + JIRA ticket creation
+
+**E2E tests**
+- Issue resolved without escalation
+- Issue escalated with ticket ID
+- Offline handling with local response pack
+
+**Non-functional tests**
+- Average response latency < 2 seconds
+- PII redaction and access control verification
