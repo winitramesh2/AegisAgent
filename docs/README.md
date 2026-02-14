@@ -1,5 +1,15 @@
 # Aegis Agent - Authenticator App Support Bot
 
+## Decision Brief
+| Item | Details |
+| --- | --- |
+| Date | February 14, 2026 |
+| For | Users, Engineering Team, Product Leadership |
+| Purpose | Decision-ready recommendations |
+| Problem | Customers need 24/7 support for authenticator app issues (OTP, biometrics, passkeys), but manual support is slow and expensive. |
+| Solution | Aegis Agent: AI-powered L1 support bot that understands issues (DeepPavlov BERT), analyzes logs (ELK pattern matching), delivers instant fixes (playbooks), escalates with context (SMTP + JIRA), and enables offline support (Phase 2: TFLite, Core ML, Windows ML). |
+| Competitive edge | First MFA-specialized bot with offline capability and forensic log analysis; a gap in current Okta/Microsoft/Ping offerings. |
+
 Intelligent L1 support for Authenticator Mobile and Windows apps. Guides users through OTP, passkey, and approval flows, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to email and JIRA with full context.
 
 ---
@@ -10,16 +20,6 @@ Intelligent L1 support for Authenticator Mobile and Windows apps. Guides users t
 | User education | Clear guidance on OTP, passkeys, and approvals |
 | Troubleshooting | Fast resolution with log-driven diagnostics |
 | Escalation | Email + JIRA tickets with full context and attachments |
-
-## Decision Brief
-| Item | Details |
-| --- | --- |
-| Date | February 14, 2026 |
-| For | Users, Engineering Team, Product Leadership |
-| Purpose | Decision-ready recommendations |
-| Problem | Customers need 24/7 support for authenticator app issues (OTP, biometrics, passkeys), but manual support is slow and expensive. |
-| Solution | Aegis Agent: AI-powered L1 support bot that understands issues (DeepPavlov BERT), analyzes logs (ELK pattern matching), delivers instant fixes (playbooks), escalates with context (SMTP + JIRA), and enables offline support (Phase 2: TFLite, Core ML, Windows ML). |
-| Competitive edge | First MFA-specialized bot with offline capability and forensic log analysis; a gap in current Okta/Microsoft/Ping offerings. |
 
 ## How It Works
 1. User reports an issue.
