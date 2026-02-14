@@ -47,14 +47,14 @@ flowchart LR
 | Phase 2: Hybrid AI | On-device AI + response packs | Offline capability and lower latency |
 
 ## Security and Responsible AI
-| Area | Recommendation |
+| Area | How it is secured and responsible |
 | --- | --- |
-| Data protection | Redact PII (email, phone, tokens), hash identifiers, encrypt logs at rest and in transit. |
-| Access control | Role-based access to logs and tickets, least-privilege API keys, scoped JIRA tokens. |
-| Auditability | Keep immutable audit logs for actions, ticket creation, and escalations. |
-| Safety | Provide safe, non-destructive guidance; avoid steps that could lock users out. |
-| Transparency | Show confidence level and ask for missing context before escalation. |
-| Compliance | Align with GDPR and HIPAA where applicable (minimize data, retention limits, access logging). |
+| Data protection | PII is redacted, identifiers are hashed, and logs are encrypted in transit and at rest. |
+| Access control | Role-based access is enforced with least-privilege API keys and scoped JIRA tokens. |
+| Auditability | Immutable audit logs track classifications, actions, and escalations end-to-end. |
+| Safety | Guidance avoids destructive steps that could lock users out. |
+| Transparency | Confidence levels are surfaced and missing context is requested before escalation. |
+| Compliance | GDPR and HIPAA alignment via data minimization, retention limits, and access logging. |
 
 ## Quick Links
 - Architecture: `docs/ARCHITECTURE.md`
