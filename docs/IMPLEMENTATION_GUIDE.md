@@ -6,6 +6,8 @@
 
 Build an intelligent L1 support bot for Authenticator Mobile and Windows apps that can educate users, troubleshoot common MFA issues, analyze logs, and escalate unresolved issues to email and JIRA.
 
+**Build principle**: open-source and free-to-use components by default.
+
 ---
 
 ## 2) Phase 1 - Core Foundation
@@ -22,6 +24,11 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
    - TokenSyncError
    - ConfigIssue
    - ServerUnreachable
+   - PushApprovalTimeout
+   - PasskeyRegistrationFailure
+   - BiometricLockout
+   - TimeDriftFailure
+   - DeviceBindingFailure
 3. Implement `train_model.py` to:
    - Load training data
    - Fine-tune BERT classifier
@@ -39,11 +46,25 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
   - Output: `{ rootCause, fixAction }`
 
 **Log Analysis Engine**
-- Parse known errors:
+- Parse known errors and IAM event markers:
   - `Error 503` -> Service unavailable or upstream outage
   - `Cert_Invalid` -> Device certificate invalid or expired
   - `Time_Skew` -> Device time out of sync
-- Return structured troubleshooting JSON.
+- Add IAM protocol markers:
+  - TOTP/HOTP challenge and seed sync failures
+  - FIDO2/WebAuthn registration/assertion failures
+  - Push timeout and approval mismatch events
+- Return structured troubleshooting JSON with confidence and evidence IDs.
+
+**OpenSearch Pipeline (recommended default)**
+- Ingest logs using Data Prepper (or Logstash) into OpenSearch indices.
+- Build dashboards for support, escalation triage, and incident timelines.
+- Correlate events by `request_id`, `session_id`, and `challenge_id`.
+
+**IdP Connector Layer (optional, recommended)**
+- Okta System Log adapter.
+- Microsoft Entra sign-in log adapter.
+- Extensible adapter interface for Ping and Google identity sources.
 
 **Email + JIRA Escalation Service**
 - Trigger escalation when:
@@ -60,6 +81,10 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
   - description (chat + logs + device context)
 - Attach raw log file via JIRA Attachments API.
 - Return ticket ID to user (for example: `AEGIS-1234`).
+- Enforce escalation quality gate:
+  - include sanitized logs
+  - include attempted fixes
+  - include root cause confidence and correlation keys
 
 ### 2.3 Client Apps (Android, iOS, Windows)
 
@@ -127,6 +152,15 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 - fix_action
 - jira_ticket_id
 
+**IAM analysis fields**
+- auth_protocol (`totp`, `hotp`, `fido2`, `push`, `biometric`)
+- auth_event_type
+- challenge_id
+- policy_result
+- risk_level
+- idp_provider
+- idp_event_id
+
 **PII safety**
 - Redact phone and email.
 - Hash user identifiers.
@@ -142,6 +176,8 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 - Email escalation sends summary payload.
 - JIRA ticket includes required fields and raw log attachment.
 - Client Apps (Android, iOS and Desktop) can upload logs and send metadata.
+- OpenSearch dashboards show end-to-end correlation for test incidents.
+- False escalation rate target <= 20% in pilot.
 
 **Phase 2**
 - Local-first inference works offline for top intents.
@@ -156,11 +192,13 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 - Training data + model pipeline validation
 - Regex parser coverage for known error signatures
 - JIRA payload and attachment validation
+- IAM intent confusion-matrix checks
 
 **Integration tests**
 - Chat API -> intent inference -> response
 - Log upload -> analyzer -> troubleshooting output
 - Email escalation + JIRA ticket creation
+- Connector adapter tests (Okta/Entra if enabled)
 
 **E2E tests**
 - Issue resolved without escalation
@@ -170,3 +208,4 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 **Non-functional tests**
 - Average response latency < 2 seconds
 - PII redaction and access control verification
+- Safety validation for non-destructive guidance

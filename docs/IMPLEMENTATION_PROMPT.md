@@ -14,6 +14,7 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 - Detect and classify common support intents.
 - Analyze logs to identify root cause and fix action.
 - Escalate unresolved issues to email and JIRA with raw log attachment.
+- Use open-source and free-to-use frameworks by default.
 
 ---
 
@@ -53,6 +54,11 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
   - TokenSyncError
   - ConfigIssue
   - ServerUnreachable
+  - PushApprovalTimeout
+  - PasskeyRegistrationFailure
+  - BiometricLockout
+  - TimeDriftFailure
+  - DeviceBindingFailure
 - `train_model.py` fine-tunes and stores artifacts in persistent volume.
 
 ### 5.2 Backend Core (Java/Spring Boot)
@@ -66,6 +72,22 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
   - `Error 503`
   - `Cert_Invalid`
   - `Time_Skew`
+- Add IAM-specific analyzers for:
+  - TOTP/HOTP validation and seed sync failures
+  - FIDO2/WebAuthn registration/assertion failures
+  - Push timeout/approval mismatch and biometric lockout
+
+### 5.2.1 Log and Search Platform
+- Use OpenSearch Stack as default:
+  - OpenSearch
+  - OpenSearch Dashboards
+  - Data Prepper
+- Correlate events by `request_id`, `session_id`, `challenge_id`, and `idp_event_id`.
+
+### 5.2.2 IdP Connector Layer (Extensible)
+- Okta System Log adapter (recommended).
+- Microsoft Entra sign-in log adapter (recommended).
+- Interface-ready adapters for Ping and Google identity sources.
 
 ### 5.3 Email + JIRA Escalation
 - Trigger when confidence is low or troubleshooting fails.
@@ -80,6 +102,10 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
   - description (chat history + log analysis + device context)
 - Attach raw log with JIRA Attachments API.
 - Return ticket ID to user.
+- Enforce escalation quality gate requiring:
+  - sanitized evidence bundle
+  - attempted fix actions
+  - confidence score + correlation IDs
 
 ### 5.4 Native App Integrations
 
@@ -128,6 +154,7 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 - Common log fields: `timestamp`, `level`, `app`, `component`, `user_id` (hashed), `device_id` (hashed), `session_id`, `request_id`
 - Client fields: `os_version`, `device_model`, `app_version`, `network_type`
 - Backend fields: `endpoint`, `intent`, `confidence`, `root_cause`, `fix_action`, `jira_ticket_id`
+- IAM fields: `auth_protocol`, `auth_event_type`, `challenge_id`, `policy_result`, `risk_level`, `idp_provider`, `idp_event_id`
 - Redact phone/email and sensitive tokens before storage or escalation.
 
 ---
@@ -140,6 +167,8 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 - Log analyzer resolves known patterns.
 - Email + JIRA escalation works with raw log attachment.
 - Client Apps (Android, iOS and Desktop) can upload logs.
+- OpenSearch dashboard correlation works for incident replay.
+- False escalation rate is tracked and reduced across pilot iterations.
 
 ### Phase 2
 - Local-first inference works offline for top intents.
@@ -151,9 +180,10 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 ## 9) Testing Expectations
 
 - Unit: training pipeline, regex rules, escalation payload validation.
-- Integration: chat flow, log upload flow, email/JIRA flow.
+- Integration: chat flow, log upload flow, email/JIRA flow, connector flow (if enabled).
 - E2E: issue resolution path, escalation path, offline path.
 - Non-functional: average latency < 2s, PII redaction validated.
+- Safety: non-destructive guidance checks and human override verification.
 
 ---
 

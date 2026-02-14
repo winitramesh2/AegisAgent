@@ -103,14 +103,80 @@ sequenceDiagram
   - Android: TensorFlow Lite (quantized INT8, 28 MB)
   - iOS: Core ML (FP16, 55 MB)
   - Windows: Windows ML (ONNX Runtime, 110 MB)
-- Log Analysis: ELK Stack (Elasticsearch + Logstash + Kibana)
+- Log Analysis: OpenSearch Stack (OpenSearch + OpenSearch Dashboards + Data Prepper)
 - Client Apps: Android (Kotlin/Compose), iOS (Swift/SwiftUI), Windows (WinUI 3)
 - Email: SMTP
 - JIRA: Cloud REST API + Attachments API
 
 ---
 
-## 7) Security and Responsible AI
+## 7) IAM Domain Model
+
+**Protocol coverage**
+- OTP: TOTP/HOTP flows and seed lifecycle issues.
+- Passkeys: FIDO2/WebAuthn registration and assertion failures.
+- Biometrics and push: local factor lockout, push timeout, approval mismatch.
+
+**Intent taxonomy (minimum)**
+- EnrollmentFailure
+- GenerateOTP
+- TokenSyncError
+- ConfigIssue
+- ServerUnreachable
+- PushApprovalTimeout
+- PasskeyRegistrationFailure
+- BiometricLockout
+- TimeDriftFailure
+- DeviceBindingFailure
+
+**Event taxonomy for root cause**
+- Auth failures (invalid/expired challenge, policy deny, risk block)
+- Device failures (clock skew, cert trust, key storage, app state)
+- Transport failures (network timeout, 5xx, proxy/TLS)
+
+---
+
+## 8) Data and Connector Strategy
+
+**Open-source first ingestion path**
+- Data Prepper/collectors ingest client logs and backend events into OpenSearch.
+- Dashboards provide forensic views for support and engineering.
+
+**IAM provider adapters (optional but recommended)**
+- Okta: System Log API for event correlation and incident context.
+- Microsoft Entra: sign-in log adapter (Graph/API export path).
+- Extensible adapter interface for Ping and Google identity sources.
+
+**Correlation keys**
+- `request_id`, `session_id`, `challenge_id`, `user_id_hash`, `device_id_hash`, `idp_event_id`
+
+---
+
+## 9) Escalation Quality Gate
+
+- Escalate only if one of these is true:
+  - model confidence below threshold
+  - no deterministic fix from playbook/rules
+  - user confirms issue still unresolved
+- Escalation bundle must include:
+  - sanitized raw log file
+  - inferred root cause + confidence
+  - attempted fix steps
+  - device/app metadata
+  - correlation identifiers
+
+---
+
+## 10) Evaluation Metrics
+
+- Intent quality: precision/recall/F1 per IAM intent.
+- Triage quality: root-cause precision@1 and precision@3.
+- Support outcomes: first-contact resolution, mean time to resolution, false escalation rate.
+- Safety outcomes: unsafe-action suggestion rate and human-override frequency.
+
+---
+
+## 11) Security and Responsible AI
 
 **Data protection**
 - PII is redacted, identifiers are hashed, and logs are encrypted in transit and at rest.
@@ -135,6 +201,6 @@ sequenceDiagram
 
 ---
 
-## 8) Phase 2 Hybrid Intelligence
+## 12) Phase 2 Hybrid Intelligence
 
 Local-first intent classification is used for offline support and lower latency. If local confidence is below threshold, the request is forwarded to the cloud model.

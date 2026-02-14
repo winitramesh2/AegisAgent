@@ -13,7 +13,7 @@
 - **For**: Users, Engineering Team, Product Leadership
 - **Purpose**: Decision-ready recommendations
 - **Problem**: Customers need 24/7 support for authenticator app issues (OTP, biometrics, passkeys), but manual support is slow and expensive.
-- **Solution**: AI-powered L1 support bot that understands issues (DeepPavlov BERT), analyzes logs (ELK pattern matching), delivers instant fixes (playbooks), escalates with context (SMTP + JIRA), and enables offline support (Phase 2: TFLite, Core ML, Windows ML).
+- **Solution**: AI-powered L1 support bot that understands issues (DeepPavlov BERT), analyzes logs (OpenSearch Stack pattern matching + correlation), delivers instant fixes (playbooks), escalates with context (SMTP + JIRA), and enables offline support (Phase 2: TFLite, Core ML, Windows ML).
 - **Competitive edge**: First MFA-specialized bot with offline capability and forensic log analysis; a gap in current Okta/Microsoft/Ping offerings.
 
 ---
@@ -68,10 +68,20 @@ flowchart LR
   - Android: TensorFlow Lite (quantized INT8, 28 MB)
   - iOS: Core ML (FP16, 55 MB)
   - Windows: Windows ML (ONNX Runtime, 110 MB)
-- Log Analysis: ELK Stack (Elasticsearch + Logstash + Kibana)
+- Log Analysis: OpenSearch Stack (OpenSearch + OpenSearch Dashboards + Data Prepper)
 - Client Apps: Android (Kotlin/Compose), iOS (Swift/SwiftUI), Windows (WinUI 3)
 - Email: SMTP
 - JIRA: Cloud REST API + Attachments API
+
+## 🧠 IAM Domain Coverage
+- Protocols and factors: OTP (TOTP/HOTP), FIDO2/WebAuthn passkeys, biometrics, push approvals.
+- IAM event focus: sign-in failures, enrollment failures, challenge timeouts, policy denials, and device trust issues.
+- Platform focus: Android, iOS, and Desktop client diagnostics with shared escalation format.
+
+## 📈 Quality Gates
+- Escalate only when confidence is low, troubleshooting fails, or required evidence is missing.
+- Escalation bundle includes sanitized logs, device metadata, error timeline, and attempted fixes.
+- Success is measured by first-contact resolution, false escalation rate, and root-cause precision.
 
 ## 🔐 Security and Responsible AI
 | Area | How it is secured and responsible |
