@@ -1,12 +1,12 @@
 # Comprehensive Implementation Prompt
 
-You are implementing Aegis Agent, an intelligent L1 support agent for Authenticator Mobile and Windows applications. The MFA apps generate OTP codes and approve login requests. The agent educates users, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to JIRA with full context.
+You are implementing Aegis Agent, an intelligent L1 support agent for Authenticator Mobile and Windows applications. The MFA apps generate OTP codes, passkeys, and approve login requests. The agent educates users, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to email and JIRA with full context.
 
 ## Objectives
-- Educate users about MFA usage (OTP generation and approval flows).
+- Educate users about MFA usage (OTP, passkeys, and approval flows).
 - Automate troubleshooting for common issues.
 - Analyze logs to identify root cause and fix actions.
-- Escalate unresolved issues to JIRA with full context and raw log attachment.
+- Escalate unresolved issues to email and JIRA with full context and raw log attachment.
 
 ## Scope
 **Phase 1 (Core)**
@@ -23,7 +23,7 @@ You are implementing Aegis Agent, an intelligent L1 support agent for Authentica
 1. User asks a question or reports a problem.
 2. AI classifies intent and confidence.
 3. Log analysis detects known error patterns.
-4. Provide fix guidance or escalate to JIRA.
+4. Provide fix guidance or escalate to email and JIRA.
 
 ## Phase 1 Requirements
 ### AI Engine (DeepPavlov)
@@ -49,8 +49,9 @@ You are implementing Aegis Agent, an intelligent L1 support agent for Authentica
   - Cert_Invalid
   - Time_Skew
 
-### JIRA Escalation
+### Email + JIRA Escalation
 - Trigger when confidence low or troubleshooting fails.
+- Send escalation email with summary and log analysis context.
 - Create ticket via JIRA Cloud REST API.
 - Required fields:
   - summary
@@ -124,5 +125,5 @@ You are implementing Aegis Agent, an intelligent L1 support agent for Authentica
 - DeepPavlov training assets
 - Java backend services
 - Mobile clients (Android/iOS)
-- JIRA escalation integration
-- Documentation under `docs/system-reminder/`
+- Email and JIRA escalation integration
+- Documentation under `docs/`

@@ -1,7 +1,7 @@
 # Architecture
 
 ## System Overview
-Aegis Agent combines a cloud AI service, a Java/Spring Boot backend, and native mobile clients. It ingests user queries and logs, performs intent classification and log analysis, then resolves issues or escalates to JIRA with full context.
+Aegis Agent combines a cloud AI service, a Java/Spring Boot backend, and native mobile clients. It ingests user queries and logs, performs intent classification and log analysis, then resolves issues or escalates to email and JIRA with full context.
 
 ## Architecture Diagram
 ```mermaid
@@ -19,6 +19,7 @@ flowchart LR
 
   API --> AI[DeepPavlov BERT]
   API --> Logs[Log Analysis Engine]
+  API --> Email[SMTP Email Escalation]
   API --> JIRA[JIRA Cloud REST]
 
   Logs --> Result[Root Cause + Fix Action]
@@ -38,7 +39,7 @@ flowchart TD
   Known -->|No| Logs[Analyze Logs]
   Logs --> Resolved{Resolved?}
   Resolved -->|Yes| Fix
-  Resolved -->|No| Escalate[Escalate to JIRA]
+  Resolved -->|No| Escalate[Escalate to Email + JIRA]
   Escalate --> End[Return Ticket ID]
 ```
 
@@ -50,6 +51,7 @@ sequenceDiagram
   participant A as API Gateway
   participant D as DeepPavlov
   participant L as Log Analyzer
+  participant E as Email
   participant J as JIRA
 
   U->>M: Submit issue + logs
@@ -61,6 +63,7 @@ sequenceDiagram
   alt Resolved
     A-->>M: Fix guidance
   else Unresolved
+    A->>E: Send escalation email
     A->>J: Create ticket + attach logs
     J-->>A: Ticket ID
     A-->>M: Ticket ID
@@ -72,6 +75,7 @@ sequenceDiagram
 - AI Engine: DeepPavlov (BERT intent classifier)
 - Log Analysis: Java regex-based parser
 - Mobile Apps: Android (Kotlin/Compose), iOS (Swift/SwiftUI)
+- Email: SMTP
 - JIRA: Cloud REST API + Attachments API
 - Phase 2: Android TFLite/Gemini Nano, iOS Core ML
 

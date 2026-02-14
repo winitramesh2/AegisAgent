@@ -1,6 +1,6 @@
 # Detailed Implementation Guide
 
-This guide is written for beginners and walks through the Phase 1 core build and the Phase 2 hybrid AI extension.
+This guide is written for beginners and walks through the Phase 1 core build and the Phase 2 hybrid AI extension for OTP and passkey-based authentication support.
 
 ## Phase 1: Core Foundation
 
@@ -37,11 +37,12 @@ This guide is written for beginners and walks through the Phase 1 core build and
   - `Time_Skew` -> "Device time out of sync"
 - Return JSON for troubleshooting responses.
 
-**JIRA Escalation Service**
+**Email + JIRA Escalation Service**
 - Trigger escalation when:
   - Confidence below threshold
   - Log analysis returns unknown root cause
   - User still fails after guided steps
+- Send escalation email with summary and log analysis context.
 - Required fields for ticket creation:
   - summary
   - priority
@@ -121,6 +122,7 @@ This guide is written for beginners and walks through the Phase 1 core build and
 - Intent model accuracy >= 85% on validation.
 - `/api/chat` returns structured response with confidence.
 - `/api/analyze-logs` resolves known patterns.
+- Email escalation sends a summary payload.
 - JIRA ticket creation includes required fields and raw log attachment.
 - Android and iOS apps can upload logs and send metadata.
 

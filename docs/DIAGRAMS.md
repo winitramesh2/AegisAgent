@@ -16,6 +16,7 @@ flowchart LR
 
   API --> AI[DeepPavlov BERT]
   API --> Logs[Log Analysis Engine]
+  API --> Email[SMTP Email Escalation]
   API --> JIRA[JIRA Cloud REST]
 
   Logs --> Result[Root Cause + Fix Action]
@@ -35,7 +36,7 @@ flowchart TD
   Known -->|No| Logs[Analyze Logs]
   Logs --> Resolved{Resolved?}
   Resolved -->|Yes| Fix
-  Resolved -->|No| Escalate[Escalate to JIRA]
+  Resolved -->|No| Escalate[Escalate to Email + JIRA]
   Escalate --> End[Return Ticket ID]
 ```
 
@@ -47,6 +48,7 @@ sequenceDiagram
   participant A as API Gateway
   participant D as DeepPavlov
   participant L as Log Analyzer
+  participant E as SMTP Email
   participant J as JIRA
 
   U->>M: Submit issue + logs
@@ -58,6 +60,7 @@ sequenceDiagram
   alt Resolved
     A-->>M: Fix guidance
   else Unresolved
+    A->>E: Send escalation email
     A->>J: Create ticket + attach logs
     J-->>A: Ticket ID
     A-->>M: Ticket ID

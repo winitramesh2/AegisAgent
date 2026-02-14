@@ -1,29 +1,66 @@
 # Aegis Agent - Authenticator App Support Bot
 
+An intelligent L1 support agent for Authenticator Mobile and Windows applications. It guides users through OTP, passkey, and approval flows, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to email and JIRA with full context.
+
+---
+
 ## Objectives
-- Intelligent L1 support agent for Authenticator Mobile and Windows application - OTP and Passkey based.
-- Educate users about Application workflows, authentication and approval flows.
-- Guide and help users in troubleshooting issues for any issue with application and it's related
-- Analyze logs for root causes and provide the 1st level resolution
-- Escalate unresolved cases to emails and JIRA with detailed and full context along with logs
+- Provide fast, accurate L1 support for OTP and passkey-based authentication.
+- Educate users on app workflows and approval flows.
+- Automate troubleshooting with log-based root-cause analysis.
+- Escalate unresolved cases to email and JIRA with complete context and attachments.
 
-## What
-Aegis Agent is a support layer for Authenticator applications that handles first-line support and log-driven diagnostics. It provides guided help, detects common failures, and escalates to engineering when resolution cannot be automated.
+## What / Why / How
+**What**: Aegis Agent is a support layer for Authenticator applications that handles first-line support and log-driven diagnostics.
 
-## Why
-MFA login issues cause user friction and ticket volume. Aegis Agent reduces time-to-resolution, standardizes troubleshooting, and supplies high-quality context to engineering via JIRA.
+**Why**: MFA login issues drive user friction and ticket volume. Aegis Agent standardizes troubleshooting and shortens time-to-resolution.
 
-## How
-Phase 1 uses a cloud-centric model (Java + DeepPavlov) and mobile clients to capture context and logs, then performs root-cause analysis and escalates to JIRA. Phase 2 adds on-device AI for offline support and latency reduction.
+**How**: Phase 1 uses a cloud-centric model (Java + DeepPavlov) and native clients. Phase 2 adds on-device AI for offline support and latency reduction.
 
-## Workflow (High Level)
-1. Educate user about Authenticator app usage and OTP/approve flows.
-2. Capture user query and device metadata.
-3. Analyze logs for known patterns.
-4. Return guidance or escalate to JIRA with full context and log attachment.
+---
+
+## User Journey (High Level)
+1. User asks a question or reports a login issue.
+2. Agent classifies intent and collects device context.
+3. Logs are analyzed for known failure patterns.
+4. Agent returns guidance or escalates to email and JIRA with full context.
+
+---
+
+## Architecture Snapshot
+```mermaid
+flowchart LR
+  User[User] --> Client[Mobile or Windows App]
+  Client --> API[Java/Spring Boot API]
+  API --> AI[DeepPavlov BERT]
+  API --> Logs[Log Analysis Engine]
+  API --> Email[SMTP Email Escalation]
+  API --> JIRA[JIRA Cloud REST]
+  Logs --> Result[Root Cause + Fix Action]
+  AI --> Result
+  Result --> API
+```
+
+---
+
+## Phase Roadmap
+| Phase | Focus | Outcome |
+| --- | --- | --- |
+| Phase 1: Core | Java + DeepPavlov + Native Apps + JIRA | Cloud-first, reliable troubleshooting and escalation |
+| Phase 2: Hybrid AI | On-device AI + response packs | Offline capability and lower latency |
+
+---
+
+## Key Capabilities
+- Intent classification for common MFA issues.
+- Log analysis with root-cause suggestions.
+- Structured escalation to email and JIRA with log attachment.
+- Mobile-first chat UI and log upload.
+
+---
 
 ## Quick Links
-- Architecture: `docs/system-reminder/ARCHITECTURE.md`
-- Implementation Guide: `docs/system-reminder/IMPLEMENTATION_GUIDE.md`
-- Implementation Prompt: `docs/system-reminder/IMPLEMENTATION_PROMPT.md`
-- Diagrams: `docs/system-reminder/DIAGRAMS.md`
+- Architecture: `docs/ARCHITECTURE.md`
+- Implementation Guide: `docs/IMPLEMENTATION_GUIDE.md`
+- Implementation Prompt: `docs/IMPLEMENTATION_PROMPT.md`
+- Diagrams: `docs/DIAGRAMS.md`
