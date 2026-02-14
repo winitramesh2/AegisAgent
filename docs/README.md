@@ -7,7 +7,7 @@
 ![Backend](https://img.shields.io/badge/Backend-Java%20%7C%20Spring%20Boot-blue?style=for-the-badge)
 ![AI](https://img.shields.io/badge/AI-DeepPavlov%20BERT-green?style=for-the-badge)
 ![Mobile](https://img.shields.io/badge/Mobile-Android%20%7C%20iOS-lightgrey?style=for-the-badge)
-![Phase2](https://img.shields.io/badge/Phase%202-TFLite%20%7C%20Core%20ML-orange?style=for-the-badge)
+![Phase2](https://img.shields.io/badge/Phase%202-TFLite%20%7C%20Core%20ML%20%7C%20Windows%20ML-orange?style=for-the-badge)
 
 - **Date**: February 14, 2026
 - **For**: Users, Engineering Team, Product Leadership
@@ -59,6 +59,18 @@ flowchart LR
 | --- | --- | --- |
 | Phase 1: Core | Java + DeepPavlov + Native Apps + JIRA | Cloud-first troubleshooting and escalation |
 | Phase 2: Hybrid AI | On-device AI + response packs | Offline capability and lower latency |
+
+## 🧱 Tech Stack (IAM-Focused)
+- Backend: Java 17, Spring Boot 3.x, REST APIs
+- AI Engine (Cloud): DeepPavlov (BERT intent classifier)
+- On-Device AI:
+  - Android: TensorFlow Lite (quantized INT8, 28 MB)
+  - iOS: Core ML (FP16, 55 MB)
+  - Windows: Windows ML (ONNX Runtime, 110 MB)
+- Log Analysis: JELK Stack (Elasticsearch + Logstash + Kibana)
+- Client Apps: Android (Kotlin/Compose), iOS (Swift/SwiftUI), Windows (WinUI 3)
+- Email: SMTP
+- JIRA: Cloud REST API + Attachments API
 
 ## 🔐 Security and Responsible AI
 | Area | How it is secured and responsible |

@@ -82,32 +82,17 @@ sequenceDiagram
   end
 ```
 
-## Tech Stack
-- Backend: Java, Spring Boot, REST APIs
-- AI Engine: DeepPavlov (BERT intent classifier)
-- Log Analysis: Java regex-based parser
-- Mobile Apps: Android (Kotlin/Compose), iOS (Swift/SwiftUI)
+## Tech Stack (IAM-Focused)
+- Backend: Java 17, Spring Boot 3.x, REST APIs
+- AI Engine (Cloud): DeepPavlov (BERT intent classifier)
+- On-Device AI:
+  - Android: TensorFlow Lite (quantized INT8, 28 MB)
+  - iOS: Core ML (FP16, 55 MB)
+  - Windows: Windows ML (ONNX Runtime, 110 MB)
+- Log Analysis: JELK Stack (Elasticsearch + Logstash + Kibana)
+- Client Apps: Android (Kotlin/Compose), iOS (Swift/SwiftUI), Windows (WinUI 3)
 - Email: SMTP
 - JIRA: Cloud REST API + Attachments API
-- Phase 2: Android TFLite/Gemini Nano, iOS Core ML
-
-## Tech Stack Options (IAM-Focused)
-**AI Engines (Cloud)**
-- DeepPavlov: Open source, self-hosted, strong for intent classification and data control.
-- Rasa NLU (DIET): Full control, flexible pipelines, strong enterprise deployments.
-- Haystack + Transformers: Best for knowledge-base question answering and retrieval.
-- Azure AI Language: Enterprise SLAs, strong Microsoft ecosystem fit.
-- AWS Comprehend + Bedrock: Scalable intent + policy-driven deployment on AWS.
-
-**On-Device AI**
-- Android: TFLite (quantized) for portability; Gemini Nano via AICore where available.
-- iOS: Core ML + Natural Language for low-latency inference.
-
-**Log Analysis (Mobile + Windows)**
-- ELK (Elasticsearch/Logstash/Kibana): Search, correlation, and dashboards at scale.
-- Splunk: Security-grade analytics and compliance-driven audit trails.
-- Datadog Logs: Fast setup and strong observability UX.
-- Azure Monitor + Log Analytics: Native Windows/AD integration and IAM alignment.
 
 ## Competitive Landscape (High-Level)
 **What strong competitors do well**
