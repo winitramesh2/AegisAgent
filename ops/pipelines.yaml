@@ -1,0 +1,12 @@
+log-pipeline:
+  source:
+    http:
+      path: "/logs"
+  processor:
+    - date:
+        from_time_received: true
+        destination: "ingest_time"
+  sink:
+    - opensearch:
+        hosts: ["http://opensearch:9200"]
+        index: "aegis-events"

@@ -1,0 +1,22 @@
+.DS_Store
+*.log
+*.tmp
+*.swp
+
+# Java
+target/
+.mvn/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+ai/deeppavlov/models/
+
+# Env
+.env

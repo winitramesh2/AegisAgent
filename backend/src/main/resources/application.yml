@@ -1,0 +1,43 @@
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+aegis:
+  confidence-threshold: 0.8
+  project-key: AEGIS
+  jira-base-url: ${JIRA_BASE_URL:}
+  jira-user: ${JIRA_USER:}
+  jira-api-token: ${JIRA_API_TOKEN:}
+  jira-reporter: ${JIRA_REPORTER:support-bot}
+  jira-reporter-account-id: ${JIRA_REPORTER_ACCOUNT_ID:}
+  jira-issue-type: ${JIRA_ISSUE_TYPE:Task}
+  jira-priority: ${JIRA_PRIORITY:Medium}
+  jira-labels: ${JIRA_LABELS:aegis,iam,mfa}
+  jira-components: ${JIRA_COMPONENTS:}
+  escalation-email-to: ${AEGIS_ESCALATION_EMAIL_TO:}
+  deeppavlov-enabled: ${DEEPPAVLOV_ENABLED:false}
+  deeppavlov-url: ${DEEPPAVLOV_URL:}
+  open-search-enabled: ${OPENSEARCH_ENABLED:false}
+  open-search-url: ${OPENSEARCH_URL:}
+  open-search-user: ${OPENSEARCH_USER:}
+  open-search-password: ${OPENSEARCH_PASSWORD:}
+  open-search-index: ${OPENSEARCH_INDEX:aegis-events}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true

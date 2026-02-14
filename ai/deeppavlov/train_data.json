@@ -1,0 +1,84 @@
+{
+  "intents": [
+    {
+      "name": "EnrollmentFailure",
+      "examples": [
+        "enrollment failed on my phone",
+        "cannot register authenticator",
+        "QR enrollment is not working"
+      ]
+    },
+    {
+      "name": "GenerateOTP",
+      "examples": [
+        "otp code not generating",
+        "my authenticator shows invalid otp",
+        "one time code keeps failing"
+      ]
+    },
+    {
+      "name": "TokenSyncError",
+      "examples": [
+        "token sync failed",
+        "my token is not syncing",
+        "auth token mismatch"
+      ]
+    },
+    {
+      "name": "ConfigIssue",
+      "examples": [
+        "configuration issue on app",
+        "wrong endpoint configured",
+        "policy setup looks broken"
+      ]
+    },
+    {
+      "name": "ServerUnreachable",
+      "examples": [
+        "error 503 from server",
+        "auth server unreachable",
+        "service unavailable during login"
+      ]
+    },
+    {
+      "name": "PushApprovalTimeout",
+      "examples": [
+        "push approval timed out",
+        "did not receive push request",
+        "approval notification never arrived"
+      ]
+    },
+    {
+      "name": "PasskeyRegistrationFailure",
+      "examples": [
+        "cannot register passkey",
+        "webauthn failed during signup",
+        "fido2 assertion failed"
+      ]
+    },
+    {
+      "name": "BiometricLockout",
+      "examples": [
+        "fingerprint locked out",
+        "face id failed too many times",
+        "biometric unavailable for approval"
+      ]
+    },
+    {
+      "name": "TimeDriftFailure",
+      "examples": [
+        "time skew detected",
+        "clock drift causing otp errors",
+        "device time out of sync"
+      ]
+    },
+    {
+      "name": "DeviceBindingFailure",
+      "examples": [
+        "device binding failed",
+        "this device is not trusted",
+        "device registration mismatch"
+      ]
+    }
+  ]
+}
