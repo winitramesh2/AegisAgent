@@ -15,6 +15,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class OpenSearchClient {
@@ -62,9 +63,76 @@ public class OpenSearchClient {
         }
     }
 
+    public Map<String, Object> searchWithFilters(
+            String correlationId,
+            String platform,
+            String eventType,
+            String from,
+            String to,
+            int size
+    ) {
+        if (!properties.isOpenSearchEnabled() || properties.getOpenSearchUrl() == null || properties.getOpenSearchUrl().isBlank()) {
+            return Map.of();
+        }
+
+        String url = properties.getOpenSearchUrl() + "/" + properties.getOpenSearchIndex() + "/_search";
+        List<Map<String, Object>> filters = new ArrayList<>();
+
+        if (correlationId != null && !correlationId.isBlank()) {
+            filters.add(Map.of("term", Map.of("correlationId.keyword", correlationId)));
+        }
+        if (platform != null && !platform.isBlank()) {
+            filters.add(Map.of("term", Map.of("platform.keyword", platform)));
+        }
+        if (eventType != null && !eventType.isBlank()) {
+            filters.add(Map.of("term", Map.of("eventType.keyword", eventType)));
+        }
+        if ((from != null && !from.isBlank()) || (to != null && !to.isBlank())) {
+            Map<String, Object> range = new HashMap<>();
+            if (from != null && !from.isBlank()) {
+                range.put("gte", from);
+            }
+            if (to != null && !to.isBlank()) {
+                range.put("lte", to);
+            }
+            filters.add(Map.of("range", Map.of("timestamp", range)));
+        }
+
+        int normalizedSize = Math.max(1, Math.min(size, 200));
+
+        Map<String, Object> query = Map.of(
+                "size", normalizedSize,
+                "sort", List.of(Map.of("timestamp", Map.of("order", "asc"))),
+                "query", Map.of("bool", Map.of("filter", filters.isEmpty() ? List.of(Map.of("match_all", Map.of())) : filters))
+        );
+
+        try {
+            return restTemplate.postForObject(url, new HttpEntity<>(query, headers()), Map.class);
+        } catch (RestClientException ignored) {
+            return Map.of();
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> timelineByCorrelationId(String correlationId) {
         Map<String, Object> response = searchByCorrelationId(correlationId);
+        return extractEvents(response);
+    }
+
+    public List<Map<String, Object>> timelineByFilters(
+            String correlationId,
+            String platform,
+            String eventType,
+            String from,
+            String to,
+            int size
+    ) {
+        Map<String, Object> response = searchWithFilters(correlationId, platform, eventType, from, to, size);
+        return extractEvents(response);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> extractEvents(Map<String, Object> response) {
         Object hitsObj = response.get("hits");
         if (!(hitsObj instanceof Map<?, ?> hitsMap)) {
             return List.of();
@@ -85,7 +153,7 @@ public class OpenSearchClient {
                 events.add(new HashMap<>((Map<String, Object>) srcMap));
             }
         }
-        return events;
+        return events.stream().filter(Objects::nonNull).toList();
     }
 
     private HttpHeaders headers() {

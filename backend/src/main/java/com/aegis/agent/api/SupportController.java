@@ -152,6 +152,23 @@ public class SupportController {
         return response;
     }
 
+    @GetMapping("/incidents")
+    public IncidentTimelineResponse incidentTimelineByFilters(
+            @RequestParam(value = "correlationId", required = false) String correlationId,
+            @RequestParam(value = "platform", required = false) String platform,
+            @RequestParam(value = "eventType", required = false) String eventType,
+            @RequestParam(value = "from", required = false) String from,
+            @RequestParam(value = "to", required = false) String to,
+            @RequestParam(value = "size", defaultValue = "50") int size
+    ) {
+        List<Map<String, Object>> events = openSearchClient.timelineByFilters(correlationId, platform, eventType, from, to, size);
+        IncidentTimelineResponse response = new IncidentTimelineResponse();
+        response.setCorrelationId(correlationId);
+        response.setEvents(events);
+        response.setTotal(events.size());
+        return response;
+    }
+
     @GetMapping("/admin/jira/validate")
     public JiraValidationResponse validateJiraMapping() {
         return jiraClient.validateFieldMapping();

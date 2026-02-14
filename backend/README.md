@@ -8,6 +8,7 @@ Spring Boot API for chat triage, log analysis, and escalation.
 - `POST /api/analyze-logs` - parse uploaded log file and return `rootCause` and `fixAction`.
 - `POST /api/escalate` - send escalation email and create JIRA issue with optional raw log attachment.
 - `GET /api/incidents/{correlationId}` - fetch timeline events indexed in OpenSearch.
+- `GET /api/incidents` - fetch incident timeline by filters (`platform`, `eventType`, `from`, `to`, `size`).
 - `GET /api/admin/jira/validate` - validate configured JIRA issue mappings (issue type, fields, components).
 
 ## Run
@@ -24,6 +25,7 @@ mvn spring-boot:run
 - `AEGIS_ESCALATION_EMAIL_TO`
 - `DEEPPAVLOV_ENABLED`, `DEEPPAVLOV_URL`
 - `OPENSEARCH_ENABLED`, `OPENSEARCH_URL`, `OPENSEARCH_USER`, `OPENSEARCH_PASSWORD`, `OPENSEARCH_INDEX`
+- `JIRA_VALIDATE_ON_STARTUP`, `JIRA_FAIL_ON_VALIDATION`
 
 ## Notes
 

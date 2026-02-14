@@ -27,6 +27,8 @@ aegis:
   open-search-user: ${OPENSEARCH_USER:}
   open-search-password: ${OPENSEARCH_PASSWORD:}
   open-search-index: ${OPENSEARCH_INDEX:aegis-events}
+  jira-validation-on-startup: ${JIRA_VALIDATE_ON_STARTUP:false}
+  fail-on-jira-validation: ${JIRA_FAIL_ON_VALIDATION:false}
 
 spring:
   servlet:

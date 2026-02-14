@@ -30,6 +30,9 @@ public class AegisProperties {
     private String openSearchIndex = "aegis-events";
     private boolean openSearchEnabled;
 
+    private boolean jiraValidationOnStartup;
+    private boolean failOnJiraValidation;
+
     public double getConfidenceThreshold() {
         return confidenceThreshold;
     }
@@ -180,5 +183,21 @@ public class AegisProperties {
 
     public void setOpenSearchEnabled(boolean openSearchEnabled) {
         this.openSearchEnabled = openSearchEnabled;
+    }
+
+    public boolean isJiraValidationOnStartup() {
+        return jiraValidationOnStartup;
+    }
+
+    public void setJiraValidationOnStartup(boolean jiraValidationOnStartup) {
+        this.jiraValidationOnStartup = jiraValidationOnStartup;
+    }
+
+    public boolean isFailOnJiraValidation() {
+        return failOnJiraValidation;
+    }
+
+    public void setFailOnJiraValidation(boolean failOnJiraValidation) {
+        this.failOnJiraValidation = failOnJiraValidation;
     }
 }

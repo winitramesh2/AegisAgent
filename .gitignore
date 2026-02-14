@@ -11,6 +11,10 @@ target/
 .idea/
 .vscode/
 *.iml
+.gradle/
+build/
+mobile/android/build/
+mobile/android/app/build/
 
 # Python
 __pycache__/

@@ -91,6 +91,23 @@ class SupportControllerTest {
     }
 
     @Test
+    void incidentTimelineByFiltersReturnsEvents() throws Exception {
+        given(openSearchClient.timelineByFilters(eq("corr-999"), eq("Android"), eq("CHAT_ESCALATED"), eq("2026-02-14T10:00:00Z"), eq("2026-02-14T12:00:00Z"), eq(20)))
+                .willReturn(List.of(Map.of("eventType", "CHAT_ESCALATED", "platform", "Android")));
+
+        mockMvc.perform(get("/api/incidents")
+                        .queryParam("correlationId", "corr-999")
+                        .queryParam("platform", "Android")
+                        .queryParam("eventType", "CHAT_ESCALATED")
+                        .queryParam("from", "2026-02-14T10:00:00Z")
+                        .queryParam("to", "2026-02-14T12:00:00Z")
+                        .queryParam("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.events[0].eventType").value("CHAT_ESCALATED"));
+    }
+
+    @Test
     void jiraValidationEndpointReturnsStatus() throws Exception {
         JiraValidationResponse response = new JiraValidationResponse();
         response.setJiraConfigured(true);
