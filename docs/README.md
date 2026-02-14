@@ -17,6 +17,13 @@ Intelligent L1 support for Authenticator Mobile and Windows apps. Guides users t
 3. Logs are analyzed for known patterns.
 4. Guidance is returned or escalated to email + JIRA.
 
+## Build Path (Short)
+1. Define scope: OTP/passkey education, log analysis, escalation.
+2. Build core: Java API + DeepPavlov intents + log parser.
+3. Integrate: SMTP email, JIRA tickets, log storage.
+4. Ship clients: Android, iOS, Windows surfaces.
+5. Test, deploy, iterate with real logs and feedback.
+
 ## Architecture Snapshot
 ```mermaid
 flowchart LR
