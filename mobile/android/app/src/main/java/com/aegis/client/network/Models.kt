@@ -2,6 +2,7 @@ package com.aegis.client.network
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class ChatRequest(
@@ -39,5 +40,5 @@ data class LogAnalysisResponse(
 data class IncidentTimelineResponse(
     @SerialName("correlationId") val correlationId: String? = null,
     val total: Int = 0,
-    val events: List<Map<String, String>> = emptyList()
+    val events: List<Map<String, JsonElement>> = emptyList()
 )

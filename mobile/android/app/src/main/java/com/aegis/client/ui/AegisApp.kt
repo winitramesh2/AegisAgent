@@ -25,6 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonPrimitive
 
 @Composable
 fun AegisApp(viewModel: AegisViewModel = viewModel()) {
@@ -89,10 +91,14 @@ fun AegisApp(viewModel: AegisViewModel = viewModel()) {
         state.timeline?.let { timeline ->
             Text("Timeline Events: ${timeline.total}", fontWeight = FontWeight.SemiBold)
             timeline.events.take(5).forEach { event ->
-                val eventType = event["eventType"] ?: "UNKNOWN"
-                val timestamp = event["timestamp"] ?: "-"
+                val eventType = event.readString("eventType", "UNKNOWN")
+                val timestamp = event.readString("timestamp", "-")
                 Text("- $eventType @ $timestamp")
             }
         }
     }
+}
+
+private fun Map<String, JsonElement>.readString(key: String, default: String): String {
+    return runCatching { get(key)?.jsonPrimitive?.content ?: default }.getOrDefault(default)
 }
