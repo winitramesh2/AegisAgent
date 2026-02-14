@@ -3,6 +3,7 @@ package com.aegis.agent.api;
 import com.aegis.agent.api.dto.ChatRequest;
 import com.aegis.agent.api.dto.ChatResponse;
 import com.aegis.agent.api.dto.LogAnalysisResponse;
+import com.aegis.agent.api.dto.IncidentTimelineResponse;
 import com.aegis.agent.config.AegisProperties;
 import com.aegis.agent.domain.AnalysisResult;
 import com.aegis.agent.domain.IntentResult;
@@ -133,6 +134,16 @@ public class SupportController {
         response.setActions(List.of("Ticket ID: " + ticket));
 
         indexChatEvent("MANUAL_ESCALATION", request, new IntentResult("Escalation", 1.0), analysis, ticket);
+        return response;
+    }
+
+    @GetMapping("/incidents/{correlationId}")
+    public IncidentTimelineResponse incidentTimeline(@PathVariable String correlationId) {
+        List<Map<String, Object>> events = openSearchClient.timelineByCorrelationId(correlationId);
+        IncidentTimelineResponse response = new IncidentTimelineResponse();
+        response.setCorrelationId(correlationId);
+        response.setEvents(events);
+        response.setTotal(events.size());
         return response;
     }
 

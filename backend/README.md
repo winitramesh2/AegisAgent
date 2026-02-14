@@ -7,6 +7,7 @@ Spring Boot API for chat triage, log analysis, and escalation.
 - `POST /api/chat` - classify issue intent and return first-aid actions or escalation ticket.
 - `POST /api/analyze-logs` - parse uploaded log file and return `rootCause` and `fixAction`.
 - `POST /api/escalate` - send escalation email and create JIRA issue with optional raw log attachment.
+- `GET /api/incidents/{correlationId}` - fetch timeline events indexed in OpenSearch.
 
 ## Run
 
@@ -26,4 +27,5 @@ mvn spring-boot:run
 ## Notes
 
 - Intent classification uses DeepPavlov when enabled, otherwise it falls back to local rule-based intent mapping.
+- DeepPavlov endpoint should return `{ "intent": "...", "confidence": 0.0 }` and is wired by `DEEPPAVLOV_URL`.
 - Log analysis events are indexed to OpenSearch when enabled.

@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +60,32 @@ public class OpenSearchClient {
         } catch (RestClientException ignored) {
             return Map.of();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> timelineByCorrelationId(String correlationId) {
+        Map<String, Object> response = searchByCorrelationId(correlationId);
+        Object hitsObj = response.get("hits");
+        if (!(hitsObj instanceof Map<?, ?> hitsMap)) {
+            return List.of();
+        }
+
+        Object hitListObj = hitsMap.get("hits");
+        if (!(hitListObj instanceof List<?> hitList)) {
+            return List.of();
+        }
+
+        List<Map<String, Object>> events = new ArrayList<>();
+        for (Object hit : hitList) {
+            if (!(hit instanceof Map<?, ?> hitMap)) {
+                continue;
+            }
+            Object source = hitMap.get("_source");
+            if (source instanceof Map<?, ?> srcMap) {
+                events.add(new HashMap<>((Map<String, Object>) srcMap));
+            }
+        }
+        return events;
     }
 
     private HttpHeaders headers() {
