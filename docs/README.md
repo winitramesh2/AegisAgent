@@ -1,13 +1,13 @@
 # Aegis Agent - Authenticator App Support Bot
 
-Intelligent AI-powered L1 support bot for Authenticator Mobile and Windows apps. Guides users through OTP, passkey, and approval flows, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to email and JIRA with full context.
+AI-powered L1 support bot for Authenticator Mobile and Windows apps. Helps users resolve OTP, passkey, and approval issues with log-based guidance and fast escalation.
 
-**Date**: February 14, 2026
-**For**: Users, Engineering Team, Product Leadership
-**Purpose**: Decision-ready recommendations
-**Problem**: Customers need 24/7 support for authenticator app issues (OTP, biometrics, passkeys), but manual support is slow and expensive.
-**Solution**: AI-powered L1 support bot that understands issues (DeepPavlov BERT), analyzes logs (ELK pattern matching), delivers instant fixes (playbooks), escalates with context (SMTP + JIRA), and enables offline support (Phase 2: TFLite, Core ML, Windows ML).
-**Competitive edge**: First MFA-specialized bot with offline capability and forensic log analysis; a gap in current Okta/Microsoft/Ping offerings.
+- **Date**: Feb 14, 2026
+- **For**: Users, Engineering, Product
+- **Purpose**: Decision-ready summary
+- **Problem**: 24/7 MFA support is costly and slow to scale
+- **Solution**: DeepPavlov intents + ELK log analysis + playbooks + SMTP/JIRA escalation + offline support (TFLite/Core ML/Windows ML)
+- **Edge**: MFA-specialized with offline capability and forensic log analysis (gap vs Okta/Microsoft/Ping)
 
 ---
 
