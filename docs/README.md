@@ -70,7 +70,14 @@ flowchart LR
 | Transparency | Confidence levels are surfaced and missing context is requested before escalation. |
 | Compliance | GDPR and HIPAA alignment via data minimization, retention limits, and access logging. |
 
+## 🧭 Competitive Differentiation
+3 major gaps to exploit that Okta/Microsoft/Ping do not address:
+1. Offline-first MFA support: on-device AI works without internet.
+2. Forensic log analysis: automated root cause plus sanitized log bundles.
+3. MFA-specialized expertise: deep OTP, FIDO2, and biometric knowledge.
+
 ## 🔗 Quick Links
+- Repository: `https://github.com/winitramesh2/AegisAgent`
 - Architecture: `docs/ARCHITECTURE.md`
 - Implementation Guide: `docs/IMPLEMENTATION_GUIDE.md`
 - Implementation Prompt: `docs/IMPLEMENTATION_PROMPT.md`
