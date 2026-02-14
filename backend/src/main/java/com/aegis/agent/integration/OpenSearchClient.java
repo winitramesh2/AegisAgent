@@ -4,6 +4,7 @@ import com.aegis.agent.config.AegisProperties;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -42,6 +43,23 @@ public class OpenSearchClient {
             restTemplate.postForObject(url, new HttpEntity<>(document, headers()), Map.class);
         } catch (RestClientException ignored) {
             // Non-blocking telemetry path.
+        }
+    }
+
+    public boolean isHealthy() {
+        if (!properties.isOpenSearchEnabled() || properties.getOpenSearchUrl() == null || properties.getOpenSearchUrl().isBlank()) {
+            return false;
+        }
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    properties.getOpenSearchUrl(),
+                    org.springframework.http.HttpMethod.GET,
+                    new HttpEntity<>(headers()),
+                    String.class
+            );
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (RestClientException ignored) {
+            return false;
         }
     }
 

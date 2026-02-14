@@ -5,6 +5,7 @@ import com.aegis.agent.domain.IntentResult;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -37,6 +38,20 @@ public class DeepPavlovIntentProvider {
             return parseResponse(response);
         } catch (RestClientException ex) {
             return null;
+        }
+    }
+
+    public boolean isHealthy() {
+        if (!properties.isDeeppavlovEnabled() || properties.getDeeppavlovUrl() == null || properties.getDeeppavlovUrl().isBlank()) {
+            return false;
+        }
+        String inferUrl = properties.getDeeppavlovUrl();
+        String healthUrl = inferUrl.endsWith("/infer") ? inferUrl.substring(0, inferUrl.length() - 6) + "/health" : inferUrl + "/health";
+        try {
+            ResponseEntity<String> resp = restTemplate.getForEntity(healthUrl, String.class);
+            return resp.getStatusCode().is2xxSuccessful();
+        } catch (RestClientException ex) {
+            return false;
         }
     }
 

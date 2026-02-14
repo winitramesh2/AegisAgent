@@ -31,4 +31,7 @@ interface AegisApi {
         @Query("eventType") eventType: String? = null,
         @Query("size") size: Int = 50
     ): IncidentTimelineResponse
+
+    @GET("status/components")
+    suspend fun componentStatus(): ComponentStatusResponse
 }

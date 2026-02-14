@@ -5,12 +5,14 @@ import com.aegis.agent.api.dto.ChatResponse;
 import com.aegis.agent.api.dto.LogAnalysisResponse;
 import com.aegis.agent.api.dto.IncidentTimelineResponse;
 import com.aegis.agent.api.dto.JiraValidationResponse;
+import com.aegis.agent.api.dto.ComponentStatusResponse;
 import com.aegis.agent.config.AegisProperties;
 import com.aegis.agent.domain.AnalysisResult;
 import com.aegis.agent.domain.IntentResult;
 import com.aegis.agent.integration.JiraClient;
 import com.aegis.agent.integration.OpenSearchClient;
 import com.aegis.agent.service.EscalationService;
+import com.aegis.agent.service.DeepPavlovIntentProvider;
 import com.aegis.agent.service.IntentService;
 import com.aegis.agent.service.LogAnalysisService;
 import com.aegis.agent.service.PlaybookService;
@@ -36,6 +38,7 @@ public class SupportController {
     private final AegisProperties properties;
     private final OpenSearchClient openSearchClient;
     private final JiraClient jiraClient;
+    private final DeepPavlovIntentProvider deepPavlovIntentProvider;
 
     public SupportController(
             IntentService intentService,
@@ -44,7 +47,8 @@ public class SupportController {
             EscalationService escalationService,
             AegisProperties properties,
             OpenSearchClient openSearchClient,
-            JiraClient jiraClient
+            JiraClient jiraClient,
+            DeepPavlovIntentProvider deepPavlovIntentProvider
     ) {
         this.intentService = intentService;
         this.logAnalysisService = logAnalysisService;
@@ -53,6 +57,7 @@ public class SupportController {
         this.properties = properties;
         this.openSearchClient = openSearchClient;
         this.jiraClient = jiraClient;
+        this.deepPavlovIntentProvider = deepPavlovIntentProvider;
     }
 
     @PostMapping("/chat")
@@ -69,7 +74,11 @@ public class SupportController {
         response.setIntent(intent.intent());
         response.setConfidence(intent.confidence());
 
-        if (request.isTroubleshootingFailed() || intent.confidence() < properties.getConfidenceThreshold()) {
+        boolean lowConfidence = intent.confidence() < properties.getConfidenceThreshold();
+        boolean unknownIntent = "Unknown".equalsIgnoreCase(intent.intent());
+        boolean shouldEscalate = request.isTroubleshootingFailed() || (lowConfidence && unknownIntent);
+
+        if (shouldEscalate) {
             AnalysisResult analysis = logAnalysisService.analyze(request.getQuery());
             String ticket = escalationService.escalate(request, analysis, null, null);
             response.setStatus("ESCALATED");
@@ -172,6 +181,19 @@ public class SupportController {
     @GetMapping("/admin/jira/validate")
     public JiraValidationResponse validateJiraMapping() {
         return jiraClient.validateFieldMapping();
+    }
+
+    @GetMapping("/status/components")
+    public ComponentStatusResponse componentStatus() {
+        Map<String, String> statuses = new HashMap<>();
+        statuses.put("backend", "UP");
+        statuses.put("deeppavlov", deepPavlovIntentProvider.isHealthy() ? "UP" : "DOWN");
+        statuses.put("opensearch", openSearchClient.isHealthy() ? "UP" : "DOWN");
+        statuses.put("jira", jiraClient.isHealthy() ? "UP" : "DOWN");
+
+        ComponentStatusResponse response = new ComponentStatusResponse();
+        response.setStatuses(statuses);
+        return response;
     }
 
     private void indexChatEvent(String eventType, ChatRequest request, IntentResult intent, AnalysisResult analysis, String ticket) {

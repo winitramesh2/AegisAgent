@@ -9,6 +9,7 @@ import com.aegis.client.network.AegisApi
 import com.aegis.client.network.ApiProvider
 import com.aegis.client.network.ChatRequest
 import com.aegis.client.network.ChatResponse
+import com.aegis.client.network.ComponentStatusResponse
 import com.aegis.client.network.IncidentTimelineResponse
 import com.aegis.client.network.LogAnalysisResponse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ data class AegisUiState(
     val chat: ChatResponse? = null,
     val logAnalysis: LogAnalysisResponse? = null,
     val timeline: IncidentTimelineResponse? = null,
+    val componentStatus: ComponentStatusResponse? = null,
     val loading: Boolean = false,
     val error: String? = null,
     val correlationId: String = UUID.randomUUID().toString()
@@ -42,9 +44,24 @@ class AegisViewModel(
         _ui.value = _ui.value.copy(query = query)
     }
 
+    fun loadComponentStatus() {
+        viewModelScope.launch {
+            runCatching { api.componentStatus() }
+                .onSuccess { status ->
+                    _ui.value = _ui.value.copy(componentStatus = status)
+                }
+                .onFailure { ex ->
+                    _ui.value = _ui.value.copy(error = ex.message ?: "Component status check failed")
+                }
+        }
+    }
+
     fun submitChat() {
         val current = _ui.value
-        if (current.query.isBlank()) return
+        if (current.query.isBlank()) {
+            _ui.value = current.copy(error = "Please describe the issue before sending chat")
+            return
+        }
 
         viewModelScope.launch {
             _ui.value = current.copy(loading = true, error = null)

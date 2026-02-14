@@ -2,9 +2,11 @@ package com.aegis.agent.api;
 
 import com.aegis.agent.config.AegisProperties;
 import com.aegis.agent.api.dto.JiraValidationResponse;
+import com.aegis.agent.domain.AnalysisResult;
 import com.aegis.agent.domain.IntentResult;
 import com.aegis.agent.integration.JiraClient;
 import com.aegis.agent.integration.OpenSearchClient;
+import com.aegis.agent.service.DeepPavlovIntentProvider;
 import com.aegis.agent.service.EscalationService;
 import com.aegis.agent.service.IntentService;
 import com.aegis.agent.service.LogAnalysisService;
@@ -53,6 +55,9 @@ class SupportControllerTest {
     @MockBean
     private JiraClient jiraClient;
 
+    @MockBean
+    private DeepPavlovIntentProvider deepPavlovIntentProvider;
+
     @Test
     void chatReturnsGuidedResponseWhenConfidenceHigh() throws Exception {
         given(intentService.classify(anyString())).willReturn(new IntentResult("GenerateOTP", 0.92));
@@ -74,6 +79,59 @@ class SupportControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("GUIDED"))
                 .andExpect(jsonPath("$.intent").value("GenerateOTP"));
+    }
+
+    @Test
+    void chatReturnsGuidedResponseWhenIntentKnownEvenIfConfidenceLow() throws Exception {
+        given(intentService.classify(anyString())).willReturn(new IntentResult("GenerateOTP", 0.14));
+        given(playbookService.actionsFor(anyString())).willReturn(List.of("Sync time", "Retry OTP"));
+        given(properties.getConfidenceThreshold()).willReturn(0.8);
+
+        String payload = """
+                {
+                  "query": "otp not generating",
+                  "platform": "Android",
+                  "userId": "user-1",
+                  "deviceMetadata": {"model":"Pixel"}
+                }
+                """;
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("GUIDED"))
+                .andExpect(jsonPath("$.intent").value("GenerateOTP"));
+    }
+
+    @Test
+    void chatEscalatesWhenIntentUnknownAndConfidenceLow() throws Exception {
+        given(intentService.classify(anyString())).willReturn(new IntentResult("Unknown", 0.2));
+        given(properties.getConfidenceThreshold()).willReturn(0.8);
+        given(logAnalysisService.analyze(anyString())).willReturn(new AnalysisResult(
+                "Unknown root cause",
+                "Collect more logs",
+                "MEDIUM",
+                0.4,
+                List.of()
+        ));
+        given(escalationService.escalate(any(), any(), any(), any())).willReturn("TAC-999");
+
+        String payload = """
+                {
+                  "query": "something odd",
+                  "platform": "Android",
+                  "userId": "user-1",
+                  "deviceMetadata": {"model":"Pixel"}
+                }
+                """;
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ESCALATED"))
+                .andExpect(jsonPath("$.escalationTicketId").value("TAC-999"));
     }
 
     @Test
@@ -120,5 +178,19 @@ class SupportControllerTest {
                 .andExpect(jsonPath("$.jiraConfigured").value(true))
                 .andExpect(jsonPath("$.projectFound").value(true))
                 .andExpect(jsonPath("$.issueTypeFound").value(true));
+    }
+
+    @Test
+    void componentStatusReturnsServiceHealthStates() throws Exception {
+        given(deepPavlovIntentProvider.isHealthy()).willReturn(true);
+        given(openSearchClient.isHealthy()).willReturn(true);
+        given(jiraClient.isHealthy()).willReturn(false);
+
+        mockMvc.perform(get("/api/status/components"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statuses.backend").value("UP"))
+                .andExpect(jsonPath("$.statuses.deeppavlov").value("UP"))
+                .andExpect(jsonPath("$.statuses.opensearch").value("UP"))
+                .andExpect(jsonPath("$.statuses.jira").value("DOWN"));
     }
 }

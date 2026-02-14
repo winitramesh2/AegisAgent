@@ -41,6 +41,19 @@ public class JiraClient {
         return issueKey;
     }
 
+    public boolean isHealthy() {
+        if (properties.getJiraBaseUrl() == null || properties.getJiraBaseUrl().isBlank()) {
+            return false;
+        }
+        try {
+            String url = properties.getJiraBaseUrl() + "/rest/api/2/project/" + properties.getProjectKey();
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers(false)), Map.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (RestClientException ex) {
+            return false;
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public JiraValidationResponse validateFieldMapping() {
         JiraValidationResponse validation = new JiraValidationResponse();

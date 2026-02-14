@@ -42,3 +42,8 @@ data class IncidentTimelineResponse(
     val total: Int = 0,
     val events: List<Map<String, JsonElement>> = emptyList()
 )
+
+@Serializable
+data class ComponentStatusResponse(
+    val statuses: Map<String, String> = emptyMap()
+)

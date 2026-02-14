@@ -10,6 +10,7 @@ Spring Boot API for chat triage, log analysis, and escalation.
 - `GET /api/incidents/{correlationId}` - fetch timeline events indexed in OpenSearch.
 - `GET /api/incidents` - fetch incident timeline by filters (`platform`, `eventType`, `from`, `to`, `size`).
 - `GET /api/admin/jira/validate` - validate configured JIRA issue mappings (issue type, fields, components).
+- `GET /api/status/components` - fetch backend/deeppavlov/opensearch/jira component status.
 
 ## Run
 
