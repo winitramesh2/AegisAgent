@@ -1,0 +1,2 @@
+deeppavlov==1.7.0
+flask==3.1.0

@@ -1,7 +1,9 @@
 package com.aegis.agent.api;
 
 import com.aegis.agent.config.AegisProperties;
+import com.aegis.agent.api.dto.JiraValidationResponse;
 import com.aegis.agent.domain.IntentResult;
+import com.aegis.agent.integration.JiraClient;
 import com.aegis.agent.integration.OpenSearchClient;
 import com.aegis.agent.service.EscalationService;
 import com.aegis.agent.service.IntentService;
@@ -48,6 +50,9 @@ class SupportControllerTest {
     @MockBean
     private OpenSearchClient openSearchClient;
 
+    @MockBean
+    private JiraClient jiraClient;
+
     @Test
     void chatReturnsGuidedResponseWhenConfidenceHigh() throws Exception {
         given(intentService.classify(anyString())).willReturn(new IntentResult("GenerateOTP", 0.92));
@@ -83,5 +88,20 @@ class SupportControllerTest {
                 .andExpect(jsonPath("$.correlationId").value("corr-123"))
                 .andExpect(jsonPath("$.total").value(2))
                 .andExpect(jsonPath("$.events[0].eventType").value("CHAT_GUIDED"));
+    }
+
+    @Test
+    void jiraValidationEndpointReturnsStatus() throws Exception {
+        JiraValidationResponse response = new JiraValidationResponse();
+        response.setJiraConfigured(true);
+        response.setProjectFound(true);
+        response.setIssueTypeFound(true);
+        given(jiraClient.validateFieldMapping()).willReturn(response);
+
+        mockMvc.perform(get("/api/admin/jira/validate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jiraConfigured").value(true))
+                .andExpect(jsonPath("$.projectFound").value(true))
+                .andExpect(jsonPath("$.issueTypeFound").value(true));
     }
 }

@@ -1,0 +1,72 @@
+### Create index template
+PUT http://localhost:9200/_index_template/aegis-events-template
+Content-Type: application/json
+
+< ./index-template.json
+
+### Insert sample event: guided support
+POST http://localhost:9200/aegis-events/_doc
+Content-Type: application/json
+
+{
+  "timestamp": "2026-02-14T12:00:00Z",
+  "eventType": "CHAT_GUIDED",
+  "correlationId": "corr-demo-001",
+  "intent": "GenerateOTP",
+  "platform": "Android",
+  "confidence": 0.93,
+  "authProtocol": "totp"
+}
+
+### Insert sample event: escalation
+POST http://localhost:9200/aegis-events/_doc
+Content-Type: application/json
+
+{
+  "timestamp": "2026-02-14T12:03:00Z",
+  "eventType": "CHAT_ESCALATED",
+  "correlationId": "corr-demo-001",
+  "intent": "ServerUnreachable",
+  "platform": "Desktop",
+  "confidence": 0.41,
+  "rootCause": "Service unavailable or upstream outage",
+  "severity": "HIGH",
+  "ticketId": "AEGIS-1234"
+}
+
+### Query timeline by correlation ID
+POST http://localhost:9200/aegis-events/_search
+Content-Type: application/json
+
+{
+  "size": 50,
+  "sort": [
+    { "timestamp": { "order": "asc" } }
+  ],
+  "query": {
+    "term": {
+      "correlationId.keyword": "corr-demo-001"
+    }
+  }
+}
+
+### Dashboard metric: escalations by root cause
+POST http://localhost:9200/aegis-events/_search
+Content-Type: application/json
+
+{
+  "size": 0,
+  "query": {
+    "term": {
+      "eventType.keyword": "CHAT_ESCALATED"
+    }
+  },
+  "aggs": {
+    "by_root_cause": {
+      "terms": {
+        "field": "rootCause.keyword",
+        "size": 10
+      }
+    }
+  }
+}

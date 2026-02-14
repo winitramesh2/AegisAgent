@@ -14,3 +14,12 @@ services:
     ports:
       - "8000:8000"
     command: sh -c "pip install -r requirements.txt && python inference_api.py"
+
+  deeppavlov-bert-api:
+    image: python:3.11-slim
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    ports:
+      - "8001:8000"
+    command: sh -c "pip install -r requirements-bert.txt && python serve_deeppavlov_bert.py"

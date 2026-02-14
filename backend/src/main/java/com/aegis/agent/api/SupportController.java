@@ -4,9 +4,11 @@ import com.aegis.agent.api.dto.ChatRequest;
 import com.aegis.agent.api.dto.ChatResponse;
 import com.aegis.agent.api.dto.LogAnalysisResponse;
 import com.aegis.agent.api.dto.IncidentTimelineResponse;
+import com.aegis.agent.api.dto.JiraValidationResponse;
 import com.aegis.agent.config.AegisProperties;
 import com.aegis.agent.domain.AnalysisResult;
 import com.aegis.agent.domain.IntentResult;
+import com.aegis.agent.integration.JiraClient;
 import com.aegis.agent.integration.OpenSearchClient;
 import com.aegis.agent.service.EscalationService;
 import com.aegis.agent.service.IntentService;
@@ -33,6 +35,7 @@ public class SupportController {
     private final EscalationService escalationService;
     private final AegisProperties properties;
     private final OpenSearchClient openSearchClient;
+    private final JiraClient jiraClient;
 
     public SupportController(
             IntentService intentService,
@@ -40,7 +43,8 @@ public class SupportController {
             PlaybookService playbookService,
             EscalationService escalationService,
             AegisProperties properties,
-            OpenSearchClient openSearchClient
+            OpenSearchClient openSearchClient,
+            JiraClient jiraClient
     ) {
         this.intentService = intentService;
         this.logAnalysisService = logAnalysisService;
@@ -48,6 +52,7 @@ public class SupportController {
         this.escalationService = escalationService;
         this.properties = properties;
         this.openSearchClient = openSearchClient;
+        this.jiraClient = jiraClient;
     }
 
     @PostMapping("/chat")
@@ -145,6 +150,11 @@ public class SupportController {
         response.setEvents(events);
         response.setTotal(events.size());
         return response;
+    }
+
+    @GetMapping("/admin/jira/validate")
+    public JiraValidationResponse validateJiraMapping() {
+        return jiraClient.validateFieldMapping();
     }
 
     private void indexChatEvent(String eventType, ChatRequest request, IntentResult intent, AnalysisResult analysis, String ticket) {

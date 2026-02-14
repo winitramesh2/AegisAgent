@@ -27,6 +27,18 @@ Inference endpoint:
 - `POST /infer` with body `{ "query": "otp not generating" }`
 - Returns `{ "intent": "GenerateOTP", "confidence": 0.91 }`
 
+## Run DeepPavlov BERT API (Containerized)
+
+```bash
+docker compose up deeppavlov-bert-api
+```
+
+- Service runs on `http://localhost:8001/infer`
+- Configure backend with:
+  - `DEEPPAVLOV_ENABLED=true`
+  - `DEEPPAVLOV_URL=http://localhost:8001/infer`
+- Health endpoint: `http://localhost:8001/health`
+
 ## Next Iteration
 
-Replace the baseline local classifier with full DeepPavlov BERT training/inference config while preserving the same IAM intent taxonomy.
+Keep IAM intent taxonomy aligned with `train_data.json` when migrating BERT config to production datasets.

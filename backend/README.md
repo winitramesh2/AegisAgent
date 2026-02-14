@@ -8,6 +8,7 @@ Spring Boot API for chat triage, log analysis, and escalation.
 - `POST /api/analyze-logs` - parse uploaded log file and return `rootCause` and `fixAction`.
 - `POST /api/escalate` - send escalation email and create JIRA issue with optional raw log attachment.
 - `GET /api/incidents/{correlationId}` - fetch timeline events indexed in OpenSearch.
+- `GET /api/admin/jira/validate` - validate configured JIRA issue mappings (issue type, fields, components).
 
 ## Run
 

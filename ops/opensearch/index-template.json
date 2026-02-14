@@ -1,0 +1,24 @@
+{
+  "index_patterns": ["aegis-events*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "properties": {
+        "timestamp": { "type": "date" },
+        "eventType": { "type": "keyword" },
+        "correlationId": { "type": "keyword" },
+        "intent": { "type": "keyword" },
+        "platform": { "type": "keyword" },
+        "rootCause": { "type": "text" },
+        "severity": { "type": "keyword" },
+        "confidence": { "type": "float" },
+        "authProtocol": { "type": "keyword" },
+        "challengeId": { "type": "keyword" },
+        "ticketId": { "type": "keyword" }
+      }
+    }
+  }
+}
