@@ -1,6 +1,5 @@
 # Aegis Agent - Authenticator App Support Bot
 
-|  |  |
 | --- | --- |
 | Overview | Intelligent AI-powered L1 support bot for Authenticator Mobile and Windows apps. Guides users through OTP, passkey, and approval flows, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to email and JIRA with full context. |
 | Date | February 14, 2026 |
