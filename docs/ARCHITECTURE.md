@@ -129,25 +129,25 @@ sequenceDiagram
 
 ## Security and Responsible AI
 **Data protection**
-- Redact PII (email, phone, tokens, device IDs) before storage or escalation.
-- Encrypt logs at rest and in transit; use short-lived signed URLs for uploads.
+- PII is redacted, identifiers are hashed, and logs are encrypted in transit and at rest.
+- Short-lived signed URLs protect uploads and limit exposure windows.
 
 **Access control**
-- Enforce role-based access for log viewing and ticket operations.
-- Use least-privilege API keys and scoped JIRA tokens.
+- Role-based access is enforced for log viewing and ticket operations.
+- Least-privilege API keys and scoped JIRA tokens are used.
 
 **Auditability**
-- Record an immutable audit trail for classification, log parsing, and ticket creation.
-- Store escalation bundles with stable incident IDs.
+- Immutable audit logs track classifications, parsing, and ticket creation end-to-end.
+- Escalation bundles use stable incident IDs for traceability.
 
 **Safety and responsibility**
-- Provide non-destructive guidance first; avoid steps that can lock users out.
-- Show confidence levels and ask for missing context before escalation.
-- Allow human override and clear handoff to R&D when confidence is low.
+- Guidance avoids destructive steps that could lock users out.
+- Confidence levels are surfaced and missing context is requested before escalation.
+- Human override and clear R&D handoff are supported when confidence is low.
 
 **Compliance**
-- GDPR: minimize data collection, apply retention limits, and support deletion requests.
-- HIPAA (if PHI is present): encrypt data, restrict access, and log all access events.
+- GDPR alignment is maintained via data minimization, retention limits, and deletion support.
+- HIPAA (if PHI is present) is supported through encryption, restricted access, and access logging.
 
 ## JIRA Escalation Payload (Required Fields)
 - summary
