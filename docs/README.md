@@ -43,7 +43,8 @@
 ## 🧩 Architecture Snapshot
 ```mermaid
 flowchart LR
-  User[User] --> Client[Client Apps (Android, iOS and Desktop)]
+  User[User] --> Client[Client Apps]
+  Client --- Platforms[Android / iOS / Desktop]
   Client --> API[Java/Spring Boot API]
   API --> AI[DeepPavlov BERT]
   API --> Logs[Log Analysis Engine]
