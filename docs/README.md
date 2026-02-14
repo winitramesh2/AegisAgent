@@ -1,4 +1,4 @@
-# Aegis Agent (Authenticator Support Bot)
+# Aegis Agent - Authenticator App Support Bot
 
 ## Objectives
 - Intelligent L1 support agent for Authenticator Mobile and Windows application - OTP and Passkey based.
