@@ -3,16 +3,15 @@
 ## System Architecture
 ```mermaid
 flowchart LR
-  User[User] --> Mobile[Mobile Apps]
-  User --> Windows[Windows App]
+  User[User] --> Clients[Client Apps]
 
-  subgraph Mobile Apps
+  subgraph Client Apps
     Android[Android: Kotlin/Compose]
     iOS[iOS: Swift/SwiftUI]
+    Desktop[Desktop: WinUI 3]
   end
 
-  Mobile --> API[Java/Spring Boot API]
-  Windows --> API
+  Clients --> API[Java/Spring Boot API]
 
   API --> AI[DeepPavlov BERT]
   API --> Logs[Log Analysis Engine]
@@ -23,8 +22,7 @@ flowchart LR
   AI --> Result
   Result --> API
   JIRA --> Ticket[Ticket ID + Attachment]
-  API --> Mobile
-  API --> Windows
+  API --> Clients
 ```
 
 ## Troubleshooting Flow
@@ -44,7 +42,7 @@ flowchart TD
 ```mermaid
 sequenceDiagram
   participant U as User
-  participant M as Mobile App
+  participant M as Client App
   participant A as API Gateway
   participant D as DeepPavlov
   participant L as Log Analyzer

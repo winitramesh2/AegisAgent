@@ -139,7 +139,7 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 - Chat API returns intent + confidence + action.
 - Log analyzer resolves known patterns.
 - Email + JIRA escalation works with raw log attachment.
-- Android/iOS/Windows clients can upload logs.
+- Client Apps (Android, iOS and Desktop) can upload logs.
 
 ### Phase 2
 - Local-first inference works offline for top intents.

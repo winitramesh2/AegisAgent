@@ -75,7 +75,7 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 
 **Windows (WinUI 3)**
 - Send queries/logs to same backend APIs.
-- Keep payload format consistent with mobile apps.
+- Keep payload format consistent across Client Apps (Android, iOS and Desktop).
 
 ---
 
@@ -113,7 +113,7 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 - session_id
 - request_id
 
-**Mobile/Windows fields**
+**Client App fields (Android, iOS and Desktop)**
 - os_version
 - device_model
 - app_version
@@ -141,7 +141,7 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 - `/api/analyze-logs` resolves known patterns.
 - Email escalation sends summary payload.
 - JIRA ticket includes required fields and raw log attachment.
-- Android/iOS/Windows clients can upload logs and send metadata.
+- Client Apps (Android, iOS and Desktop) can upload logs and send metadata.
 
 **Phase 2**
 - Local-first inference works offline for top intents.

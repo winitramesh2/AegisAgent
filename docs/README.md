@@ -43,7 +43,7 @@
 ## 🧩 Architecture Snapshot
 ```mermaid
 flowchart LR
-  User[User] --> Client[Mobile or Windows App]
+  User[User] --> Client[Client Apps (Android, iOS and Desktop)]
   Client --> API[Java/Spring Boot API]
   API --> AI[DeepPavlov BERT]
   API --> Logs[Log Analysis Engine]
@@ -67,7 +67,7 @@ flowchart LR
   - Android: TensorFlow Lite (quantized INT8, 28 MB)
   - iOS: Core ML (FP16, 55 MB)
   - Windows: Windows ML (ONNX Runtime, 110 MB)
-- Log Analysis: JELK Stack (Elasticsearch + Logstash + Kibana)
+- Log Analysis: ELK Stack (Elasticsearch + Logstash + Kibana)
 - Client Apps: Android (Kotlin/Compose), iOS (Swift/SwiftUI), Windows (WinUI 3)
 - Email: SMTP
 - JIRA: Cloud REST API + Attachments API
