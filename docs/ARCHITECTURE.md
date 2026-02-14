@@ -127,6 +127,28 @@ sequenceDiagram
 - Adopt ELK or Splunk for cross-correlation of IdP + device logs.
 - Keep on-device inference for top intents to reduce server load and improve UX.
 
+## Security and Responsible AI
+**Data protection**
+- Redact PII (email, phone, tokens, device IDs) before storage or escalation.
+- Encrypt logs at rest and in transit; use short-lived signed URLs for uploads.
+
+**Access control**
+- Enforce role-based access for log viewing and ticket operations.
+- Use least-privilege API keys and scoped JIRA tokens.
+
+**Auditability**
+- Record an immutable audit trail for classification, log parsing, and ticket creation.
+- Store escalation bundles with stable incident IDs.
+
+**Safety and responsibility**
+- Provide non-destructive guidance first; avoid steps that can lock users out.
+- Show confidence levels and ask for missing context before escalation.
+- Allow human override and clear handoff to R&D when confidence is low.
+
+**Compliance**
+- GDPR: minimize data collection, apply retention limits, and support deletion requests.
+- HIPAA (if PHI is present): encrypt data, restrict access, and log all access events.
+
 ## JIRA Escalation Payload (Required Fields)
 - summary
 - priority

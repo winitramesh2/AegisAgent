@@ -46,6 +46,16 @@ flowchart LR
 | Phase 1: Core | Java + DeepPavlov + Native Apps + JIRA | Cloud-first troubleshooting and escalation |
 | Phase 2: Hybrid AI | On-device AI + response packs | Offline capability and lower latency |
 
+## Security and Responsible AI
+| Area | Recommendation |
+| --- | --- |
+| Data protection | Redact PII (email, phone, tokens), hash identifiers, encrypt logs at rest and in transit. |
+| Access control | Role-based access to logs and tickets, least-privilege API keys, scoped JIRA tokens. |
+| Auditability | Keep immutable audit logs for actions, ticket creation, and escalations. |
+| Safety | Provide safe, non-destructive guidance; avoid steps that could lock users out. |
+| Transparency | Show confidence level and ask for missing context before escalation. |
+| Compliance | Align with GDPR and HIPAA where applicable (minimize data, retention limits, access logging). |
+
 ## Quick Links
 - Architecture: `docs/ARCHITECTURE.md`
 - Implementation Guide: `docs/IMPLEMENTATION_GUIDE.md`
