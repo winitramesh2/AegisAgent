@@ -5,6 +5,10 @@ import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aegis.client.hybrid.HybridAiEngine
+import com.aegis.client.hybrid.HybridDiagnosis
+import com.aegis.client.hybrid.ResponsePackRepository
+import com.aegis.client.hybrid.RuleBasedLocalIntentClassifier
 import com.aegis.client.network.AegisApi
 import com.aegis.client.network.ApiProvider
 import com.aegis.client.network.ChatRequest
@@ -30,6 +34,9 @@ data class AegisUiState(
     val componentStatus: ComponentStatusResponse? = null,
     val loading: Boolean = false,
     val error: String? = null,
+    val hybridResult: HybridDiagnosis? = null,
+    val hybridLoading: Boolean = false,
+    val hybridError: String? = null,
     val correlationId: String = UUID.randomUUID().toString()
 )
 
@@ -40,8 +47,10 @@ class AegisViewModel(
     private val _ui = MutableStateFlow(AegisUiState())
     val ui: StateFlow<AegisUiState> = _ui.asStateFlow()
 
+    private var hybridEngine: HybridAiEngine? = null
+
     fun onQueryChange(query: String) {
-        _ui.value = _ui.value.copy(query = query, error = null)
+        _ui.value = _ui.value.copy(query = query, error = null, hybridError = null)
     }
 
     fun loadComponentStatus() {
@@ -147,6 +156,40 @@ class AegisViewModel(
                 .onFailure { ex ->
                     _ui.value = _ui.value.copy(loading = false, error = ex.message ?: "Timeline fetch failed")
                 }
+        }
+    }
+
+    fun runHybridDiagnosis(context: android.content.Context) {
+        val current = _ui.value
+        if (current.query.isBlank()) {
+            _ui.value = current.copy(hybridError = "Please describe the issue before running on-device AI")
+            return
+        }
+
+        viewModelScope.launch {
+            _ui.value = current.copy(hybridLoading = true, hybridError = null)
+            runCatching {
+                val engine = hybridEngine ?: HybridAiEngine(
+                    classifier = RuleBasedLocalIntentClassifier(),
+                    repository = ResponsePackRepository(context.applicationContext)
+                ).also { hybridEngine = it }
+                engine.diagnose(current.query)
+            }.onSuccess { result ->
+                if (result == null) {
+                    _ui.value = _ui.value.copy(
+                        hybridLoading = false,
+                        hybridResult = null,
+                        hybridError = "On-device confidence was below the threshold. Use Core AI for cloud fallback."
+                    )
+                } else {
+                    _ui.value = _ui.value.copy(hybridLoading = false, hybridResult = result)
+                }
+            }.onFailure { ex ->
+                _ui.value = _ui.value.copy(
+                    hybridLoading = false,
+                    hybridError = ex.message ?: "Hybrid AI failed to run"
+                )
+            }
         }
     }
 

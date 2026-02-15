@@ -1,0 +1,59 @@
+{
+  "version": "0.1.0",
+  "intents": [
+    {
+      "intent": "GenerateOTP",
+      "diagnosis": "Time sync or token seed mismatch is preventing OTP generation.",
+      "actions": [
+        "Ensure device time is set to automatic",
+        "Re-sync the token in the Authenticator app",
+        "Try a new OTP after 30 seconds"
+      ]
+    },
+    {
+      "intent": "PushApprovalTimeout",
+      "diagnosis": "Push approval is timing out due to notification or network delays.",
+      "actions": [
+        "Confirm push notifications are enabled for the app",
+        "Switch to Wi-Fi or stable network",
+        "Retry approval within the next 60 seconds"
+      ]
+    },
+    {
+      "intent": "PasskeyRegistrationFailure",
+      "diagnosis": "Passkey registration failed due to device or policy constraints.",
+      "actions": [
+        "Ensure device screen lock is enabled",
+        "Retry passkey registration in the same browser",
+        "Check that the device is not in restricted mode"
+      ]
+    },
+    {
+      "intent": "BiometricLockout",
+      "diagnosis": "Biometric attempts exceeded or sensor is temporarily locked.",
+      "actions": [
+        "Wait 30 seconds and retry biometric",
+        "Use device PIN once to re-enable biometrics",
+        "Clean the sensor and retry"
+      ]
+    },
+    {
+      "intent": "ServerUnreachable",
+      "diagnosis": "Backend or IdP is unreachable from this device.",
+      "actions": [
+        "Check network connectivity",
+        "Disable VPN or proxy and retry",
+        "Try again from a different network"
+      ]
+    },
+    {
+      "intent": "ConfigIssue",
+      "diagnosis": "App configuration or policy mismatch detected.",
+      "actions": [
+        "Verify the correct environment is selected",
+        "Update the app to the latest version",
+        "Re-enroll the device if configuration changed"
+      ]
+    }
+  ]
+}

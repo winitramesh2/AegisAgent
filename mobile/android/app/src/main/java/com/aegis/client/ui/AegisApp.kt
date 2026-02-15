@@ -30,6 +30,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,6 +79,7 @@ fun AegisApp(viewModel: AegisViewModel = viewModel()) {
     val clipboardManager = LocalClipboardManager.current
     var chatPanelOpen by remember { mutableStateOf(true) }
     var componentDetailsExpanded by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
         viewModel.loadComponentStatus()
@@ -149,201 +152,302 @@ fun AegisApp(viewModel: AegisViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-        componentStatus?.let { components ->
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Server Components", fontWeight = FontWeight.SemiBold)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedButton(onClick = { componentDetailsExpanded = !componentDetailsExpanded }) {
-                                Icon(
-                                    imageVector = if (componentDetailsExpanded) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                    contentDescription = null
-                                )
-                                Text(if (componentDetailsExpanded) "Hide" else "Show", modifier = Modifier.padding(start = 6.dp))
-                            }
-                            IconButton(onClick = { viewModel.loadComponentStatus() }, enabled = !state.loading) {
-                                Icon(Icons.Filled.Sync, contentDescription = "Refresh")
-                            }
-                        }
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        components.components.toSortedMap().forEach { (name, item) ->
-                            MiniStatusChip(name = name, item = item)
-                        }
-                    }
-
-                    if (componentDetailsExpanded) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            components.components.toSortedMap().forEach { (name, item) ->
-                                CompactStatusRow(name = name, item = item)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!chatPanelOpen) {
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-                Text(
-                    text = "Chat session minimized. Tap the floating chat button to open.",
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodyMedium
+            TabRow(selectedTabIndex = selectedTab, modifier = Modifier.fillMaxWidth()) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Core AI") }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Hybrid AI") }
                 )
             }
-            return@Column
-        }
 
-        OutlinedTextField(
-            value = state.query,
-            onValueChange = viewModel::onQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 140.dp),
-            label = { Text("Describe issue") },
-            minLines = 4,
-            maxLines = 6,
-            placeholder = { Text("Example: OTP code not generating on Android") },
-            readOnly = false,
-            singleLine = false
-        )
+            if (selectedTab == 0) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    componentStatus?.let { components ->
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Server Components", fontWeight = FontWeight.SemiBold)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        OutlinedButton(onClick = { componentDetailsExpanded = !componentDetailsExpanded }) {
+                                            Icon(
+                                                imageVector = if (componentDetailsExpanded) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                                contentDescription = null
+                                            )
+                                            Text(if (componentDetailsExpanded) "Hide" else "Show", modifier = Modifier.padding(start = 6.dp))
+                                        }
+                                        IconButton(onClick = { viewModel.loadComponentStatus() }, enabled = !state.loading) {
+                                            Icon(Icons.Filled.Sync, contentDescription = "Refresh")
+                                        }
+                                    }
+                                }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Button(
-                onClick = { viewModel.submitChat() },
-                enabled = state.query.isNotBlank() && !state.loading,
-                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
-                Text("Send", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
-            }
-            OutlinedButton(
-                onClick = { viewModel.retryChat() },
-                enabled = state.chat != null && state.query.isNotBlank() && !state.loading,
-                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Icon(Icons.Filled.Refresh, contentDescription = null)
-                Text("Retry", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
-            }
-            OutlinedButton(
-                onClick = { viewModel.escalateIssue() },
-                enabled = state.chat != null && state.query.isNotBlank() && !state.loading,
-                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-            ) {
-                Icon(Icons.Filled.ReportProblem, contentDescription = null)
-                Text("Escalate", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
-            }
-        }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                    components.components.toSortedMap().forEach { (name, item) ->
+                                        MiniStatusChip(name = name, item = item)
+                                    }
+                                }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            OutlinedButton(
-                onClick = { filePicker.launch(arrayOf("text/*", "*/*")) },
-                enabled = !state.loading,
-                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Icon(Icons.Filled.UploadFile, contentDescription = null)
-                Text("Upload", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
-            }
-            OutlinedButton(
-                onClick = { viewModel.fetchTimeline() },
-                enabled = !state.loading,
-                modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Icon(Icons.Filled.History, contentDescription = null)
-                Text("Timeline", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
-            }
-        }
-        if (state.loading) {
-            CircularProgressIndicator()
-        }
-
-        state.error?.let {
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-                Text(
-                    text = "Error: $it",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(12.dp)
-                )
-            }
-        }
-
-        state.chat?.let { chat ->
-            val statusText = buildString {
-                appendLine("Chat Status: ${chat.status}")
-                appendLine("Intent: ${chat.intent} (${chat.confidence})")
-            }
-
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SelectionContainer {
-                        Text(statusText)
-                    }
-                    IconButton(onClick = { clipboardManager.setText(AnnotatedString(statusText)) }) {
-                        Icon(Icons.Filled.ContentCopy, contentDescription = "Copy status")
-                    }
-                }
-            }
-
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Diagnosis", fontWeight = FontWeight.SemiBold)
-                    Text(chat.message)
-                    if (chat.actions.isNotEmpty()) {
-                        Text("Actions", fontWeight = FontWeight.SemiBold)
-                        chat.actions.forEach { action ->
-                            Text("- $action")
+                                if (componentDetailsExpanded) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        components.components.toSortedMap().forEach { (name, item) ->
+                                            CompactStatusRow(name = name, item = item)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                    if (chat.status.equals("ESCALATED", ignoreCase = true)) {
-                        Text("Please wait for 3 working days. Support team will contact you.")
+
+                    if (!chatPanelOpen) {
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Text(
+                                text = "Chat session minimized. Tap the floating chat button to open.",
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        return@Column
+                    }
+
+                    OutlinedTextField(
+                        value = state.query,
+                        onValueChange = viewModel::onQueryChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 140.dp),
+                        label = { Text("Describe issue") },
+                        minLines = 4,
+                        maxLines = 6,
+                        placeholder = { Text("Example: OTP code not generating on Android") },
+                        readOnly = false,
+                        singleLine = false
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = { viewModel.submitChat() },
+                            enabled = state.query.isNotBlank() && !state.loading,
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
+                            Text("Send", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.retryChat() },
+                            enabled = state.chat != null && state.query.isNotBlank() && !state.loading,
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Filled.Refresh, contentDescription = null)
+                            Text("Retry", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.escalateIssue() },
+                            enabled = state.chat != null && state.query.isNotBlank() && !state.loading,
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Filled.ReportProblem, contentDescription = null)
+                            Text("Escalate", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
+                        }
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedButton(
+                            onClick = { filePicker.launch(arrayOf("text/*", "*/*")) },
+                            enabled = !state.loading,
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Filled.UploadFile, contentDescription = null)
+                            Text("Upload", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.fetchTimeline() },
+                            enabled = !state.loading,
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Filled.History, contentDescription = null)
+                            Text("Timeline", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
+                        }
+                    }
+                    if (state.loading) {
+                        CircularProgressIndicator()
+                    }
+
+                    state.error?.let {
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Text(
+                                text = "Error: $it",
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+
+                    state.chat?.let { chat ->
+                        val statusText = buildString {
+                            appendLine("Chat Status: ${chat.status}")
+                            appendLine("Intent: ${chat.intent} (${chat.confidence})")
+                        }
+
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                SelectionContainer {
+                                    Text(statusText)
+                                }
+                                IconButton(onClick = { clipboardManager.setText(AnnotatedString(statusText)) }) {
+                                    Icon(Icons.Filled.ContentCopy, contentDescription = "Copy status")
+                                }
+                            }
+                        }
+
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Diagnosis", fontWeight = FontWeight.SemiBold)
+                                Text(chat.message)
+                                if (chat.actions.isNotEmpty()) {
+                                    Text("Actions", fontWeight = FontWeight.SemiBold)
+                                    chat.actions.forEach { action ->
+                                        Text("- $action")
+                                    }
+                                }
+                                if (chat.status.equals("ESCALATED", ignoreCase = true)) {
+                                    Text("Please wait for 3 working days. Support team will contact you.")
+                                }
+                            }
+                        }
+                    }
+
+                    state.logAnalysis?.let { analysis ->
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("Log Analysis", fontWeight = FontWeight.SemiBold)
+                                Text("Root Cause: ${analysis.rootCause}")
+                                Text("Fix: ${analysis.fixAction}")
+                                Text("Severity: ${analysis.severity} (${analysis.confidence})")
+                            }
+                        }
+                    }
+
+                    state.timeline?.let { timeline ->
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("Timeline Events: ${timeline.total}", fontWeight = FontWeight.SemiBold)
+                                timeline.events.take(5).forEach { event ->
+                                    val eventType = event.readString("eventType", "UNKNOWN")
+                                    val timestamp = event.readString("timestamp", "-")
+                                    Text("- $eventType @ $timestamp")
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = state.query,
+                        onValueChange = viewModel::onQueryChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 120.dp),
+                        label = { Text("Describe issue") },
+                        minLines = 3,
+                        maxLines = 5,
+                        placeholder = { Text("Example: Push approval timeout on Android") },
+                        readOnly = false,
+                        singleLine = false
+                    )
 
-        state.logAnalysis?.let { analysis ->
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Log Analysis", fontWeight = FontWeight.SemiBold)
-                    Text("Root Cause: ${analysis.rootCause}")
-                    Text("Fix: ${analysis.fixAction}")
-                    Text("Severity: ${analysis.severity} (${analysis.confidence})")
-                }
-            }
-        }
-
-        state.timeline?.let { timeline ->
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Timeline Events: ${timeline.total}", fontWeight = FontWeight.SemiBold)
-                    timeline.events.take(5).forEach { event ->
-                        val eventType = event.readString("eventType", "UNKNOWN")
-                        val timestamp = event.readString("timestamp", "-")
-                        Text("- $eventType @ $timestamp")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = { viewModel.runHybridDiagnosis(context) },
+                            enabled = state.query.isNotBlank() && !state.hybridLoading,
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Filled.Psychology, contentDescription = null)
+                            Text("Run On-Device", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.submitChat() },
+                            enabled = state.query.isNotBlank() && !state.loading,
+                            modifier = Modifier.weight(1f).heightIn(min = 40.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
+                            Text("Core Fallback", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 6.dp), maxLines = 1)
+                        }
                     }
+
+                    if (state.hybridLoading) {
+                        CircularProgressIndicator()
+                    }
+
+                    state.hybridError?.let { error ->
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Text(
+                                text = error,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+
+                    state.hybridResult?.let { result ->
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("On-Device Result", fontWeight = FontWeight.SemiBold)
+                                Text("Intent: ${result.intent}")
+                                Text("Confidence: ${String.format("%.2f", result.confidence)}")
+                                Text("Source: ${result.source}")
+                                Text("Diagnosis", fontWeight = FontWeight.SemiBold)
+                                Text(result.diagnosis)
+                                if (result.actions.isNotEmpty()) {
+                                    Text("Actions", fontWeight = FontWeight.SemiBold)
+                                    result.actions.forEach { action ->
+                                        Text("- $action")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                 }
             }
         }
-    }
     }
 }
 
