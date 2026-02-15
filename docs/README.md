@@ -3,7 +3,6 @@
 > **AI enabled intelligent L1 support Agent for Mobile and Windows Authenticator Apps**  
 > *Guides users through OTP, passkey, and approval flows, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to email and JIRA with full context.*
 
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow?style=for-the-badge)
 ![Backend](https://img.shields.io/badge/Backend-Java%20%7C%20Spring%20Boot-blue?style=for-the-badge)
 ![AI](https://img.shields.io/badge/AI-DeepPavlov%20BERT%20%7C%20Cloud-green?style=for-the-badge)
 ![Mobile](https://img.shields.io/badge/Plateform-Android%20%7C%20iOS%20%7C%20Windows-lightgrey?style=for-the-badge)
