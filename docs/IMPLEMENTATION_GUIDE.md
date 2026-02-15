@@ -37,13 +37,21 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 
 ### 2.2 Backend Core (Java/Spring Boot)
 
+**Support workflow contract**
+- First pass: cloud diagnosis first, then DeepPavlov cross-verification.
+- Retry pass: cloud-only diagnosis using the original query plus prior diagnosis/actions.
+- Escalation: user-triggered only through explicit Escalate action.
+
 **API Gateway**
 - `POST /api/chat`
-  - Input: user query, app metadata, device info
-  - Output: intent, confidence, recommended action
+  - Input: user query, app metadata, device info, `retryAttempt`
+  - Output: intent, confidence, diagnosis, recommended actions
 - `POST /api/analyze-logs`
   - Input: log file
   - Output: `{ rootCause, fixAction }`
+- `POST /api/escalate`
+  - Input: user query + context (JSON or multipart with optional log file)
+  - Output: escalation status + JIRA ticket ID + SLA message
 
 **Log Analysis Engine**
 - Parse known errors and IAM event markers:
@@ -67,10 +75,7 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 - Extensible adapter interface for Ping and Google identity sources.
 
 **Email + JIRA Escalation Service**
-- Trigger escalation when:
-  - Confidence is below threshold
-  - Root cause remains unknown
-  - User still fails after guided steps
+- Trigger escalation when user presses Escalate after guided and retry attempts.
 - Send escalation email summary with issue context.
 - Create JIRA ticket with required fields:
   - summary
@@ -81,6 +86,7 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
   - description (chat + logs + device context)
 - Attach raw log file via JIRA Attachments API.
 - Return ticket ID to user (for example: `AEGIS-1234`).
+- Return user-facing SLA: support team will respond within 3 working days.
 - Enforce escalation quality gate:
   - include sanitized logs
   - include attempted fixes
@@ -92,6 +98,9 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 - Build `ChatScreen` and integrate Retrofit.
 - Capture `Build.MODEL` and `VERSION.SDK_INT`.
 - Add native file picker for log uploads.
+- Add action buttons: `Send Chat`, `Retry`, `Escalate`.
+- On Retry, append previous diagnosis and action list to the original query before sending.
+- Render diagnosis and action points clearly in bullet format.
 
 **iOS (Swift/SwiftUI)**
 - Build `ChatView` and integrate URLSession.
@@ -172,9 +181,12 @@ Build an intelligent L1 support bot for Authenticator Mobile and Windows apps th
 **Phase 1**
 - Intent model accuracy >= 85% on validation set.
 - `/api/chat` returns structured response with confidence.
+- First pass executes cloud-first + DeepPavlov cross-verification.
+- Retry pass executes cloud-only inference path.
 - `/api/analyze-logs` resolves known patterns.
 - Email escalation sends summary payload.
 - JIRA ticket includes required fields and raw log attachment.
+- `/api/escalate` returns ticket ID and 3-working-days SLA message.
 - Client Apps (Android, iOS and Desktop) can upload logs and send metadata.
 - OpenSearch dashboards show end-to-end correlation for test incidents.
 - False escalation rate target <= 20% in pilot.

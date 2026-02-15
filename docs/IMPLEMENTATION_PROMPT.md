@@ -37,9 +37,13 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 ## 4) User Workflow
 
 1. User asks a question or reports an issue.
-2. AI classifies intent and confidence.
-3. Log analysis detects known patterns.
-4. Agent provides fix guidance or escalates to email and JIRA.
+2. Backend sends query to cloud LLM for primary diagnosis and action plan.
+3. Backend cross-verifies diagnosis with local DeepPavlov model.
+4. Agent displays clear diagnosis and bulleted actions.
+5. If unresolved, user presses Retry.
+6. Retry request appends prior diagnosis/actions and calls cloud LLM only.
+7. If still unresolved, user presses Escalate.
+8. Backend creates JIRA ticket, sends email, and returns 3-working-days SLA message.
 
 ---
 
@@ -63,11 +67,17 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 
 ### 5.2 Backend Core (Java/Spring Boot)
 - `POST /api/chat`
-  - Input: user query + device metadata
-  - Output: intent + confidence + recommended action
+  - Input: user query + device metadata + `retryAttempt`
+  - Output: intent + confidence + diagnosis + recommended actions
+  - Behavior:
+    - `retryAttempt=false` -> cloud-first + DeepPavlov cross-verification
+    - `retryAttempt=true` -> cloud-only retry path
 - `POST /api/analyze-logs`
   - Input: log file
   - Output: `{ rootCause, fixAction }`
+- `POST /api/escalate`
+  - Input: unresolved issue context (JSON or multipart)
+  - Output: escalation status + ticket ID + SLA message
 - Detect known log patterns:
   - `Error 503`
   - `Cert_Invalid`
@@ -90,7 +100,7 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 - Interface-ready adapters for Ping and Google identity sources.
 
 ### 5.3 Email + JIRA Escalation
-- Trigger when confidence is low or troubleshooting fails.
+- Trigger only when user explicitly presses Escalate after guided and retry responses.
 - Send escalation email with summary and troubleshooting context.
 - Create JIRA issue via Cloud REST API.
 - Include required fields:
@@ -102,6 +112,7 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
   - description (chat history + log analysis + device context)
 - Attach raw log with JIRA Attachments API.
 - Return ticket ID to user.
+- Return SLA text: support team will respond within 3 working days.
 - Enforce escalation quality gate requiring:
   - sanitized evidence bundle
   - attempted fix actions
@@ -114,6 +125,9 @@ You are implementing **Aegis Agent**, an intelligent L1 support assistant for Au
 - Retrofit networking
 - Capture `Build.MODEL`, `VERSION.SDK_INT`
 - Native file picker for logs
+- Add `Retry` and `Escalate` actions in the chat panel
+- On Retry, append previous diagnosis and attempted action list before sending
+- Render diagnosis and actions in clear bullets
 
 **iOS**
 - Swift/SwiftUI chat UI

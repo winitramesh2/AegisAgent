@@ -27,9 +27,11 @@
 
 ## ⚙️ How It Works
 1. User reports an issue.
-2. Intent is classified with device context.
-3. Logs are analyzed for known patterns.
-4. Guidance is returned or escalated to email + JIRA.
+2. Cloud LLM generates the primary diagnosis and first-resolution actions.
+3. DeepPavlov cross-verifies the diagnosis to refine confidence and actions.
+4. User can press Retry to run a second-pass cloud-only diagnosis using prior attempted actions.
+5. If still unresolved, user presses Escalate to create JIRA + send email with full context.
+6. User receives SLA confirmation: support will respond within 3 working days.
 
 ## 🧭 Build Path (Short)
 | Step | Focus | Outcome |
@@ -46,12 +48,15 @@ flowchart LR
   User[User] --> Client[Client Apps]
   Client --- Platforms[Android / iOS / Desktop]
   Client --> API[Java/Spring Boot API]
+  API --> Cloud[Cloud LLM]
   API --> AI[DeepPavlov BERT]
   API --> Logs[Log Analysis Engine]
   API --> Email[SMTP Email Escalation]
   API --> JIRA[JIRA Cloud REST]
-  Logs --> Result[Root Cause + Fix Action]
-  AI --> Result
+  Cloud --> Result[Primary Diagnosis + Actions]
+  AI --> Result2[Cross-Verified Diagnosis]
+  Result2 --> Result
+  Logs --> Result
   Result --> API
 ```
 
@@ -79,7 +84,9 @@ flowchart LR
 - Platform focus: Android, iOS, and Desktop client diagnostics with shared escalation format.
 
 ## 📈 Quality Gates
-- Escalate only when confidence is low, troubleshooting fails, or required evidence is missing.
+- First response is always guided troubleshooting (no auto-escalation on first pass).
+- Retry pass uses cloud-only diagnosis with appended prior actions and outcomes.
+- Escalate only when user confirms unresolved status through explicit Escalate action.
 - Escalation bundle includes sanitized logs, device metadata, error timeline, and attempted fixes.
 - Success is measured by first-contact resolution, false escalation rate, and root-cause precision.
 

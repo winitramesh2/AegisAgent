@@ -4,7 +4,7 @@
 
 ## 1) System Overview
 
-Aegis Agent combines a cloud AI service, a Java/Spring Boot backend, and Client Apps (Android, iOS and Desktop). It ingests user queries and logs, performs intent classification and log analysis, then resolves issues or escalates to email and JIRA with full context.
+Aegis Agent combines a cloud AI service, a Java/Spring Boot backend, and Client Apps (Android, iOS and Desktop). It ingests user queries and logs, runs cloud-first diagnosis, cross-verifies with DeepPavlov, then resolves issues or escalates to email and JIRA with full context.
 
 ## 2) High-Level Delivery Path
 
@@ -35,14 +35,17 @@ flowchart LR
 
   Clients --> API[Java/Spring Boot API]
 
+  API --> Cloud[Cloud LLM]
   API --> AI[DeepPavlov BERT]
   API --> Logs[Log Analysis Engine]
   API --> Email[SMTP Email Escalation]
   API --> JIRA[JIRA Cloud REST]
 
-  Logs --> Result[Root Cause + Fix Action]
-  AI --> Result
-  Result --> API
+  Cloud --> ResultA[Primary Diagnosis + Actions]
+  AI --> ResultB[Cross-Verified Diagnosis]
+  ResultB --> ResultA
+  Logs --> ResultA
+  ResultA --> API
   JIRA --> Ticket[Ticket ID + Attachment]
   API --> Clients
 ```
@@ -53,14 +56,19 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  Start[User Query] --> Intent[Intent Classification]
-  Intent --> Known{Known Issue?}
-  Known -->|Yes| Fix[Provide Fix Action]
-  Known -->|No| Logs[Analyze Logs]
-  Logs --> Resolved{Resolved?}
-  Resolved -->|Yes| Fix
-  Resolved -->|No| Escalate[Escalate to Email + JIRA]
-  Escalate --> End[Return Ticket ID]
+  Start[User Describes Issue] --> Cloud[Cloud LLM Diagnosis]
+  Cloud --> Local[DeepPavlov Cross-Verification]
+  Local --> Guided[Return Diagnosis + Bulleted Actions]
+  Guided --> Fixed{Issue Resolved?}
+  Fixed -->|Yes| End[Close Incident]
+  Fixed -->|No| Retry[User Presses Retry]
+  Retry --> RetryCloud[Cloud-Only Retry With Prior Actions Context]
+  RetryCloud --> RetryGuided[Return Refined Diagnosis + Actions]
+  RetryGuided --> Fixed2{Issue Resolved?}
+  Fixed2 -->|Yes| End
+  Fixed2 -->|No| Escalate[User Presses Escalate]
+  Escalate --> JiraMail[Create JIRA + Send Email]
+  JiraMail --> SLA[Return: Wait 3 Working Days]
 ```
 
 ---
@@ -72,24 +80,32 @@ sequenceDiagram
   participant U as User
   participant M as Client App
   participant A as API Gateway
+  participant C as Cloud LLM
   participant D as DeepPavlov
   participant L as Log Analyzer
   participant E as Email
   participant J as JIRA
 
-  U->>M: Submit issue + logs
-  M->>A: /api/chat + /api/analyze-logs
-  A->>D: Intent classification
-  D-->>A: Intent + confidence
-  A->>L: Log parsing
+  U->>M: Submit issue
+  M->>A: POST /api/chat (retryAttempt=false)
+  A->>C: Primary diagnosis
+  C-->>A: Cloud intent + confidence
+  A->>D: Cross-verify diagnosis
+  D-->>A: Local intent + confidence
+  A->>L: Optional log analysis
   L-->>A: rootCause + fixAction
-  alt Resolved
-    A-->>M: Fix guidance
-  else Unresolved
-    A->>E: Send escalation email
-    A->>J: Create ticket + attach logs
-    J-->>A: Ticket ID
-    A-->>M: Ticket ID
+  A-->>M: Diagnosis + bulleted actions
+  U->>M: Press Retry (if unresolved)
+  M->>A: POST /api/chat (retryAttempt=true, with prior actions context)
+  A->>C: Cloud-only retry diagnosis
+  C-->>A: Refined diagnosis + actions
+  A-->>M: Refined diagnosis + actions
+  U->>M: Press Escalate (if still unresolved)
+  M->>A: POST /api/escalate
+  A->>E: Send escalation email
+  A->>J: Create ticket + attach logs
+  J-->>A: Ticket ID
+  A-->>M: Ticket + 3-working-days SLA
   end
 ```
 
@@ -154,10 +170,9 @@ sequenceDiagram
 
 ## 9) Escalation Quality Gate
 
-- Escalate only if one of these is true:
-  - model confidence below threshold
-  - no deterministic fix from playbook/rules
-  - user confirms issue still unresolved
+- Escalate only on explicit user action after guided and retry attempts.
+- First pass must be guided (cloud-first, DeepPavlov cross-check).
+- Retry pass must be cloud-only and include prior attempted actions.
 - Escalation bundle must include:
   - sanitized raw log file
   - inferred root cause + confidence
