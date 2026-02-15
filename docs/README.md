@@ -6,8 +6,8 @@
 ![Status](https://img.shields.io/badge/Status-In%20Development-yellow?style=for-the-badge)
 ![Backend](https://img.shields.io/badge/Backend-Java%20%7C%20Spring%20Boot-blue?style=for-the-badge)
 ![AI](https://img.shields.io/badge/AI-DeepPavlov%20BERT-green?style=for-the-badge)
-![Mobile](https://img.shields.io/badge/Mobile-Android%20%7C%20iOS%20%7C%20Windows-lightgrey?style=for-the-badge)
-![Phase2](https://img.shields.io/badge/Phase%202-TFLite%20%7C%20Core%20ML%20%7C%20Windows%20ML-orange?style=for-the-badge)
+![Mobile](https://img.shields.io/badge/Plateform-Android%20%7C%20iOS%20%7C%20Windows-lightgrey?style=for-the-badge)
+![Phase2](https://img.shields.io/badge/OnDevice%202-TFLite%20%7C%20Core%20ML%20%7C%20Windows%20ML-orange?style=for-the-badge)
 
 - **Purpose**: Decision-ready recommendations
 - **Problem**: Customers need 24/7 support for authenticator app issues (OTP, biometrics, passkeys), but manual support is slow and expensive.
