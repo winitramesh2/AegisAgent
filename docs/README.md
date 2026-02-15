@@ -1,6 +1,6 @@
-# 🛡️ Aegis Agent - Authenticator App Support Bot
+# 🛡️ Aegis Agent
 
-> **Intelligent L1 support for Authenticator Mobile and Windows apps**  
+> **AI enabled intelligent L1 support Agent for Mobile and Windows Authenticator Apps**  
 > *Guides users through OTP, passkey, and approval flows, troubleshoots issues, analyzes logs for root causes, and escalates unresolved cases to email and JIRA with full context.*
 
 ![Status](https://img.shields.io/badge/Status-In%20Development-yellow?style=for-the-badge)
@@ -9,12 +9,11 @@
 ![Mobile](https://img.shields.io/badge/Mobile-Android%20%7C%20iOS-lightgrey?style=for-the-badge)
 ![Phase2](https://img.shields.io/badge/Phase%202-TFLite%20%7C%20Core%20ML%20%7C%20Windows%20ML-orange?style=for-the-badge)
 
-- **Date**: February 14, 2026
-- **For**: Users, Engineering Team, Product Leadership
 - **Purpose**: Decision-ready recommendations
 - **Problem**: Customers need 24/7 support for authenticator app issues (OTP, biometrics, passkeys), but manual support is slow and expensive.
-- **Solution**: AI-powered L1 support bot that understands issues (DeepPavlov BERT), analyzes logs (OpenSearch Stack pattern matching + correlation), delivers instant fixes (playbooks), escalates with context (SMTP + JIRA), and enables offline support (Phase 2: TFLite, Core ML, Windows ML).
+- **Solution**: AI-powered L1 support bot that understands issues (DeepPavlov BERT), analyzes logs (OpenSearch Stack pattern matching + correlation), delivers instant fixes (playbooks), escalates with context (SMTP + JIRA), and enables offline support (TFLite, Core ML, Windows ML).
 - **Competitive edge**: First MFA-specialized bot with offline capability and forensic log analysis; a gap in current Okta/Microsoft/Ping offerings.
+- **Audience**: Users, Engineering Team, Product Leadership
 
 ---
 
@@ -61,10 +60,10 @@ flowchart LR
 ```
 
 ## 🗺️ Phase Roadmap
-| Phase | Focus | Outcome |
+| # | Focus | Outcome |
 | --- | --- | --- |
-| Phase 1: Core | Java + DeepPavlov + Native Apps + JIRA | Cloud-first troubleshooting and escalation |
-| Phase 2: Hybrid AI | On-device AI + response packs | Offline capability and lower latency |
+| 1: Core AI | Java + DeepPavlov + Native Apps + JIRA | Cloud-first troubleshooting and escalation |
+| 2: Hybrid AI | On-device AI + response packs | Offline capability and lower latency |
 
 ## 🧱 Tech Stack (IAM-Focused)
 - Backend: Java 17, Spring Boot 3.x, REST APIs
