@@ -6,8 +6,10 @@ import com.aegis.agent.api.dto.LogAnalysisResponse;
 import com.aegis.agent.api.dto.IncidentTimelineResponse;
 import com.aegis.agent.api.dto.JiraValidationResponse;
 import com.aegis.agent.api.dto.ComponentStatusResponse;
+import com.aegis.agent.api.dto.ComponentStatusItem;
 import com.aegis.agent.config.AegisProperties;
 import com.aegis.agent.domain.AnalysisResult;
+import com.aegis.agent.domain.IntentResolution;
 import com.aegis.agent.domain.IntentResult;
 import com.aegis.agent.integration.JiraClient;
 import com.aegis.agent.integration.OpenSearchClient;
@@ -18,18 +20,25 @@ import com.aegis.agent.service.LogAnalysisService;
 import com.aegis.agent.service.PlaybookService;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api")
 public class SupportController {
+
+    private static final Pattern LETTER_PATTERN = Pattern.compile("[A-Za-z]");
 
     private final IntentService intentService;
     private final LogAnalysisService logAnalysisService;
@@ -39,6 +48,7 @@ public class SupportController {
     private final OpenSearchClient openSearchClient;
     private final JiraClient jiraClient;
     private final DeepPavlovIntentProvider deepPavlovIntentProvider;
+    private final Environment environment;
 
     public SupportController(
             IntentService intentService,
@@ -48,7 +58,8 @@ public class SupportController {
             AegisProperties properties,
             OpenSearchClient openSearchClient,
             JiraClient jiraClient,
-            DeepPavlovIntentProvider deepPavlovIntentProvider
+            DeepPavlovIntentProvider deepPavlovIntentProvider,
+            Environment environment
     ) {
         this.intentService = intentService;
         this.logAnalysisService = logAnalysisService;
@@ -58,6 +69,7 @@ public class SupportController {
         this.openSearchClient = openSearchClient;
         this.jiraClient = jiraClient;
         this.deepPavlovIntentProvider = deepPavlovIntentProvider;
+        this.environment = environment;
     }
 
     @PostMapping("/chat")
@@ -67,33 +79,70 @@ public class SupportController {
                 : request.getCorrelationId();
         request.setCorrelationId(correlationId);
 
-        IntentResult intent = intentService.classify(request.getQuery());
+        IntentResolution resolution = intentService.classifyResolution(request.getQuery(), request.isRetryAttempt());
+        IntentResult intent = resolution.getPrimaryIntent();
 
         ChatResponse response = new ChatResponse();
         response.setCorrelationId(correlationId);
-        response.setIntent(intent.intent());
-        response.setConfidence(intent.confidence());
 
-        boolean lowConfidence = intent.confidence() < properties.getConfidenceThreshold();
-        boolean unknownIntent = "Unknown".equalsIgnoreCase(intent.intent());
-        boolean shouldEscalate = request.isTroubleshootingFailed() || (lowConfidence && unknownIntent);
-
-        if (shouldEscalate) {
-            AnalysisResult analysis = logAnalysisService.analyze(request.getQuery());
-            String ticket = escalationService.escalate(request, analysis, null, null);
-            response.setStatus("ESCALATED");
-            response.setEscalationTicketId(ticket);
-            response.setMessage("Issue escalated with full context.");
-            response.setActions(List.of("Track ticket: " + ticket));
-            indexChatEvent("CHAT_ESCALATED", request, intent, analysis, ticket);
+        if (isLowInformationQuery(request.getQuery())) {
+            response.setIntent("Unknown");
+            response.setConfidence(0.0);
+            response.setStatus("NEED_MORE_INFO");
+            response.setMessage("Please describe the problem with at least one symptom (for example: OTP invalid, push timeout, passkey failure). ");
+            response.setActions(List.of(
+                    "Include app name and platform (Android/iOS/Desktop)",
+                    "Mention exact error text if visible",
+                    "Share when the issue started"
+            ));
+            indexChatEvent("CHAT_NEED_MORE_INFO", request, new IntentResult("Unknown", 0.0), null, null);
             return response;
         }
 
+        response.setIntent(intent.intent());
+        response.setConfidence(intent.confidence());
+
         response.setStatus("GUIDED");
-        response.setMessage("Here are first-aid troubleshooting steps.");
-        response.setActions(playbookService.actionsFor(intent.intent()));
+        response.setMessage(buildDiagnosisMessage(resolution, request.isRetryAttempt()));
+        response.setActions(refinedActions(resolution));
         indexChatEvent("CHAT_GUIDED", request, intent, null, null);
         return response;
+    }
+
+    private String buildDiagnosisMessage(IntentResolution resolution, boolean retryAttempt) {
+        String primary = resolution.getPrimaryIntent().intent();
+        String source = resolution.getSourceSummary();
+        boolean cloudBacked = source != null && source.toLowerCase().contains("cloud");
+        String base;
+        if (retryAttempt) {
+            base = cloudBacked
+                    ? "Retry diagnosis from cloud model: probable issue is " + primary + "."
+                    : "Retry diagnosis used fallback logic: probable issue is " + primary + ".";
+        } else {
+            base = cloudBacked
+                    ? "Primary diagnosis from cloud model: probable issue is " + primary + "."
+                    : "Primary diagnosis from local fallback: probable issue is " + primary + ".";
+        }
+        if (resolution.hasSecondaryIntent()) {
+            return base + " DeepPavlov cross-check also suggests " + resolution.getSecondaryIntent().intent() + ".";
+        }
+        return base + " Source: " + resolution.getSourceSummary() + ".";
+    }
+
+    private List<String> refinedActions(IntentResolution resolution) {
+        LinkedHashSet<String> merged = new LinkedHashSet<>(playbookService.actionsFor(resolution.getPrimaryIntent().intent()));
+        if (resolution.hasSecondaryIntent()) {
+            merged.addAll(playbookService.actionsFor(resolution.getSecondaryIntent().intent()));
+        }
+        return merged.stream().limit(5).toList();
+    }
+
+    private boolean isLowInformationQuery(String query) {
+        if (query == null) {
+            return true;
+        }
+        String trimmed = query.trim();
+        return trimmed.length() < 3 || !LETTER_PATTERN.matcher(trimmed).find();
     }
 
     @PostMapping(value = "/analyze-logs", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -144,8 +193,31 @@ public class SupportController {
         response.setConfidence(1.0);
         response.setCorrelationId(correlationId);
         response.setEscalationTicketId(ticket);
-        response.setMessage("Escalation created successfully.");
-        response.setActions(List.of("Ticket ID: " + ticket));
+        response.setMessage("Issue escalated successfully. Please wait for 3 working days and the support team will contact you.");
+        response.setActions(List.of("Ticket ID: " + ticket, "Support team SLA: 3 working days"));
+
+        indexChatEvent("MANUAL_ESCALATION", request, new IntentResult("Escalation", 1.0), analysis, ticket);
+        return response;
+    }
+
+    @PostMapping(value = "/escalate", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ChatResponse escalateJson(@Valid @RequestBody ChatRequest request) {
+        String correlationId = request.getCorrelationId() == null || request.getCorrelationId().isBlank()
+                ? UUID.randomUUID().toString()
+                : request.getCorrelationId();
+        request.setCorrelationId(correlationId);
+
+        AnalysisResult analysis = logAnalysisService.analyze(request.getQuery());
+        String ticket = escalationService.escalate(request, analysis, null, null);
+
+        ChatResponse response = new ChatResponse();
+        response.setStatus("ESCALATED");
+        response.setIntent("Escalation");
+        response.setConfidence(1.0);
+        response.setCorrelationId(correlationId);
+        response.setEscalationTicketId(ticket);
+        response.setMessage("Issue escalated successfully. Please wait for 3 working days and the support team will contact you.");
+        response.setActions(List.of("Ticket ID: " + ticket, "Support team SLA: 3 working days"));
 
         indexChatEvent("MANUAL_ESCALATION", request, new IntentResult("Escalation", 1.0), analysis, ticket);
         return response;
@@ -185,15 +257,48 @@ public class SupportController {
 
     @GetMapping("/status/components")
     public ComponentStatusResponse componentStatus() {
-        Map<String, String> statuses = new HashMap<>();
-        statuses.put("backend", "UP");
-        statuses.put("deeppavlov", deepPavlovIntentProvider.isHealthy() ? "UP" : "DOWN");
-        statuses.put("opensearch", openSearchClient.isHealthy() ? "UP" : "DOWN");
-        statuses.put("jira", jiraClient.isHealthy() ? "UP" : "DOWN");
+        Map<String, ComponentStatusItem> components = new HashMap<>();
+        components.put("backend", new ComponentStatusItem("UP", "http://localhost:8080/actuator/health", "Core API"));
+        components.put("deeppavlov", new ComponentStatusItem(
+                deepPavlovIntentProvider.isHealthy() ? "UP" : "DOWN",
+                properties.getDeeppavlovUrl(),
+                "Intent inference"
+        ));
+        components.put("opensearch", new ComponentStatusItem(
+                openSearchClient.isHealthy() ? "UP" : "DOWN",
+                properties.getOpenSearchUrl(),
+                "Log indexing and replay"
+        ));
+        components.put("jira", new ComponentStatusItem(
+                jiraClient.isHealthy() ? "UP" : "DOWN",
+                properties.getJiraBaseUrl(),
+                "Ticket escalation"
+        ));
+
+        String smtpHost = environment.getProperty("spring.mail.host", "");
+        int smtpPort = Integer.parseInt(environment.getProperty("spring.mail.port", "587"));
+        boolean smtpUp = isSmtpReachable(smtpHost, smtpPort);
+        components.put("email", new ComponentStatusItem(
+                smtpUp ? "UP" : "DOWN",
+                smtpHost.isBlank() ? null : "smtp://" + smtpHost + ":" + smtpPort,
+                "Escalation email"
+        ));
 
         ComponentStatusResponse response = new ComponentStatusResponse();
-        response.setStatuses(statuses);
+        response.setComponents(components);
         return response;
+    }
+
+    private boolean isSmtpReachable(String host, int port) {
+        if (host == null || host.isBlank()) {
+            return false;
+        }
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(host, port), 1500);
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
     }
 
     private void indexChatEvent(String eventType, ChatRequest request, IntentResult intent, AnalysisResult analysis, String ticket) {

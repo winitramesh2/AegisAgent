@@ -4,13 +4,13 @@ import java.util.Map;
 
 public class ComponentStatusResponse {
 
-    private Map<String, String> statuses;
+    private Map<String, ComponentStatusItem> components;
 
-    public Map<String, String> getStatuses() {
-        return statuses;
+    public Map<String, ComponentStatusItem> getComponents() {
+        return components;
     }
 
-    public void setStatuses(Map<String, String> statuses) {
-        this.statuses = statuses;
+    public void setComponents(Map<String, ComponentStatusItem> components) {
+        this.components = components;
     }
 }

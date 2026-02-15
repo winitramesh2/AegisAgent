@@ -31,6 +31,12 @@ public class AegisProperties {
     private String openSearchIndex = "aegis-events";
     private boolean openSearchEnabled;
 
+    private boolean cloudIntentEnabled;
+    private String cloudIntentProvider = "openai";
+    private String cloudIntentUrl;
+    private String cloudIntentApiKey;
+    private String cloudIntentModel = "gpt-4o-mini";
+
     private boolean jiraValidationOnStartup;
     private boolean failOnJiraValidation;
 
@@ -192,6 +198,46 @@ public class AegisProperties {
 
     public void setOpenSearchEnabled(boolean openSearchEnabled) {
         this.openSearchEnabled = openSearchEnabled;
+    }
+
+    public boolean isCloudIntentEnabled() {
+        return cloudIntentEnabled;
+    }
+
+    public void setCloudIntentEnabled(boolean cloudIntentEnabled) {
+        this.cloudIntentEnabled = cloudIntentEnabled;
+    }
+
+    public String getCloudIntentProvider() {
+        return cloudIntentProvider;
+    }
+
+    public void setCloudIntentProvider(String cloudIntentProvider) {
+        this.cloudIntentProvider = cloudIntentProvider;
+    }
+
+    public String getCloudIntentUrl() {
+        return cloudIntentUrl;
+    }
+
+    public void setCloudIntentUrl(String cloudIntentUrl) {
+        this.cloudIntentUrl = cloudIntentUrl;
+    }
+
+    public String getCloudIntentApiKey() {
+        return cloudIntentApiKey;
+    }
+
+    public void setCloudIntentApiKey(String cloudIntentApiKey) {
+        this.cloudIntentApiKey = cloudIntentApiKey;
+    }
+
+    public String getCloudIntentModel() {
+        return cloudIntentModel;
+    }
+
+    public void setCloudIntentModel(String cloudIntentModel) {
+        this.cloudIntentModel = cloudIntentModel;
     }
 
     public boolean isJiraValidationOnStartup() {

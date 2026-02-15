@@ -24,6 +24,8 @@ public class ChatRequest {
 
     private boolean troubleshootingFailed;
 
+    private boolean retryAttempt;
+
     private String correlationId;
 
     private String authProtocol;
@@ -84,6 +86,14 @@ public class ChatRequest {
 
     public void setTroubleshootingFailed(boolean troubleshootingFailed) {
         this.troubleshootingFailed = troubleshootingFailed;
+    }
+
+    public boolean isRetryAttempt() {
+        return retryAttempt;
+    }
+
+    public void setRetryAttempt(boolean retryAttempt) {
+        this.retryAttempt = retryAttempt;
     }
 
     public String getCorrelationId() {

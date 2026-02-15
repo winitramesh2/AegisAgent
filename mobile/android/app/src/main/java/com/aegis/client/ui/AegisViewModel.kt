@@ -41,7 +41,7 @@ class AegisViewModel(
     val ui: StateFlow<AegisUiState> = _ui.asStateFlow()
 
     fun onQueryChange(query: String) {
-        _ui.value = _ui.value.copy(query = query)
+        _ui.value = _ui.value.copy(query = query, error = null)
     }
 
     fun loadComponentStatus() {
@@ -66,24 +66,55 @@ class AegisViewModel(
         viewModelScope.launch {
             _ui.value = current.copy(loading = true, error = null)
             runCatching {
-                api.chat(
-                    ChatRequest(
-                        query = current.query,
-                        platform = "Android",
-                        userId = "demo-user",
-                        authProtocol = "totp",
-                        correlationId = current.correlationId,
-                        deviceMetadata = mapOf(
-                            "model" to Build.MODEL,
-                            "sdkInt" to Build.VERSION.SDK_INT.toString(),
-                            "manufacturer" to Build.MANUFACTURER
-                        )
-                    )
-                )
+                api.chat(buildRequest(query = current.query, correlationId = current.correlationId, retryAttempt = false))
             }.onSuccess { chat ->
                 _ui.value = _ui.value.copy(loading = false, chat = chat, correlationId = chat.correlationId)
             }.onFailure { ex ->
                 _ui.value = _ui.value.copy(loading = false, error = ex.message ?: "Chat request failed")
+            }
+        }
+    }
+
+    fun retryChat() {
+        val current = _ui.value
+        val previous = current.chat
+        if (current.query.isBlank()) {
+            _ui.value = current.copy(error = "Please describe the issue before retry")
+            return
+        }
+        if (previous == null) {
+            _ui.value = current.copy(error = "Run Send Chat first to generate initial resolution")
+            return
+        }
+
+        val retryPrompt = buildRetryPrompt(current.query, previous)
+        viewModelScope.launch {
+            _ui.value = current.copy(loading = true, error = null)
+            runCatching {
+                api.chat(buildRequest(query = retryPrompt, correlationId = current.correlationId, retryAttempt = true))
+            }.onSuccess { chat ->
+                _ui.value = _ui.value.copy(loading = false, chat = chat, correlationId = chat.correlationId)
+            }.onFailure { ex ->
+                _ui.value = _ui.value.copy(loading = false, error = ex.message ?: "Retry request failed")
+            }
+        }
+    }
+
+    fun escalateIssue() {
+        val current = _ui.value
+        if (current.query.isBlank()) {
+            _ui.value = current.copy(error = "Please describe the issue before escalation")
+            return
+        }
+
+        viewModelScope.launch {
+            _ui.value = current.copy(loading = true, error = null)
+            runCatching {
+                api.escalate(buildRequest(query = current.query, correlationId = current.correlationId, troubleshootingFailed = true))
+            }.onSuccess { chat ->
+                _ui.value = _ui.value.copy(loading = false, chat = chat, correlationId = chat.correlationId)
+            }.onFailure { ex ->
+                _ui.value = _ui.value.copy(loading = false, error = ex.message ?: "Escalation failed")
             }
         }
     }
@@ -116,6 +147,45 @@ class AegisViewModel(
                 .onFailure { ex ->
                     _ui.value = _ui.value.copy(loading = false, error = ex.message ?: "Timeline fetch failed")
                 }
+        }
+    }
+
+    private fun buildRequest(
+        query: String,
+        correlationId: String,
+        retryAttempt: Boolean = false,
+        troubleshootingFailed: Boolean = false
+    ): ChatRequest {
+        return ChatRequest(
+            query = query,
+            platform = "Android",
+            userId = "demo-user",
+            authProtocol = "totp",
+            troubleshootingFailed = troubleshootingFailed,
+            retryAttempt = retryAttempt,
+            correlationId = correlationId,
+            deviceMetadata = mapOf(
+                "model" to Build.MODEL,
+                "sdkInt" to Build.VERSION.SDK_INT.toString(),
+                "manufacturer" to Build.MANUFACTURER
+            )
+        )
+    }
+
+    private fun buildRetryPrompt(query: String, previous: ChatResponse): String {
+        val previousActions = if (previous.actions.isEmpty()) {
+            "- No prior actions listed"
+        } else {
+            previous.actions.joinToString(separator = "\n") { "- $it" }
+        }
+        return buildString {
+            appendLine(query)
+            appendLine()
+            appendLine("Previous diagnosis:")
+            appendLine(previous.message)
+            appendLine()
+            appendLine("Previous actions already attempted:")
+            appendLine(previousActions)
         }
     }
 }

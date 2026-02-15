@@ -15,6 +15,9 @@ interface AegisApi {
     @POST("chat")
     suspend fun chat(@Body request: ChatRequest): ChatResponse
 
+    @POST("escalate")
+    suspend fun escalate(@Body request: ChatRequest): ChatResponse
+
     @Multipart
     @POST("analyze-logs")
     suspend fun analyzeLogs(

@@ -11,6 +11,7 @@ data class ChatRequest(
     @SerialName("userId") val userId: String,
     @SerialName("deviceMetadata") val deviceMetadata: Map<String, String>,
     @SerialName("troubleshootingFailed") val troubleshootingFailed: Boolean = false,
+    @SerialName("retryAttempt") val retryAttempt: Boolean = false,
     @SerialName("correlationId") val correlationId: String? = null,
     @SerialName("authProtocol") val authProtocol: String? = null
 )
@@ -45,5 +46,12 @@ data class IncidentTimelineResponse(
 
 @Serializable
 data class ComponentStatusResponse(
-    val statuses: Map<String, String> = emptyMap()
+    val components: Map<String, ComponentStatusItem> = emptyMap()
+)
+
+@Serializable
+data class ComponentStatusItem(
+    val status: String = "DOWN",
+    val url: String? = null,
+    val detail: String? = null
 )

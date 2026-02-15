@@ -6,11 +6,13 @@ import org.springframework.stereotype.Service;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class RuleBasedIntentService implements IntentService {
 
     private static final Map<String, String> KEYWORDS_TO_INTENT = new LinkedHashMap<>();
+    private static final Pattern ALPHA_NUMERIC_PATTERN = Pattern.compile(".*[a-zA-Z0-9].*");
 
     static {
         KEYWORDS_TO_INTENT.put("enroll", "EnrollmentFailure");
@@ -34,12 +36,17 @@ public class RuleBasedIntentService implements IntentService {
         if (query == null || query.isBlank()) {
             return new IntentResult("Unknown", 0.0);
         }
+
         String normalized = query.toLowerCase(Locale.ROOT);
+        if (!ALPHA_NUMERIC_PATTERN.matcher(normalized).matches() || normalized.trim().length() < 3) {
+            return new IntentResult("Unknown", 0.05);
+        }
+
         for (Map.Entry<String, String> entry : KEYWORDS_TO_INTENT.entrySet()) {
             if (normalized.contains(entry.getKey())) {
-                return new IntentResult(entry.getValue(), 0.86);
+                return new IntentResult(entry.getValue(), 0.76);
             }
         }
-        return new IntentResult("Unknown", 0.42);
+        return new IntentResult("Unknown", 0.2);
     }
 }

@@ -3,6 +3,7 @@ package com.aegis.agent.api;
 import com.aegis.agent.config.AegisProperties;
 import com.aegis.agent.api.dto.JiraValidationResponse;
 import com.aegis.agent.domain.AnalysisResult;
+import com.aegis.agent.domain.IntentResolution;
 import com.aegis.agent.domain.IntentResult;
 import com.aegis.agent.integration.JiraClient;
 import com.aegis.agent.integration.OpenSearchClient;
@@ -23,6 +24,8 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -60,9 +63,8 @@ class SupportControllerTest {
 
     @Test
     void chatReturnsGuidedResponseWhenConfidenceHigh() throws Exception {
-        given(intentService.classify(anyString())).willReturn(new IntentResult("GenerateOTP", 0.92));
+        given(intentService.classifyResolution(anyString(), anyBoolean())).willReturn(IntentResolution.single(new IntentResult("GenerateOTP", 0.92), "cloud-primary with DeepPavlov confirmation"));
         given(playbookService.actionsFor(anyString())).willReturn(List.of("Sync time", "Retry OTP"));
-        given(properties.getConfidenceThreshold()).willReturn(0.8);
 
         String payload = """
                 {
@@ -83,9 +85,8 @@ class SupportControllerTest {
 
     @Test
     void chatReturnsGuidedResponseWhenIntentKnownEvenIfConfidenceLow() throws Exception {
-        given(intentService.classify(anyString())).willReturn(new IntentResult("GenerateOTP", 0.14));
+        given(intentService.classifyResolution(anyString(), anyBoolean())).willReturn(IntentResolution.single(new IntentResult("GenerateOTP", 0.14), "rule-based fallback"));
         given(playbookService.actionsFor(anyString())).willReturn(List.of("Sync time", "Retry OTP"));
-        given(properties.getConfidenceThreshold()).willReturn(0.8);
 
         String payload = """
                 {
@@ -105,17 +106,9 @@ class SupportControllerTest {
     }
 
     @Test
-    void chatEscalatesWhenIntentUnknownAndConfidenceLow() throws Exception {
-        given(intentService.classify(anyString())).willReturn(new IntentResult("Unknown", 0.2));
-        given(properties.getConfidenceThreshold()).willReturn(0.8);
-        given(logAnalysisService.analyze(anyString())).willReturn(new AnalysisResult(
-                "Unknown root cause",
-                "Collect more logs",
-                "MEDIUM",
-                0.4,
-                List.of()
-        ));
-        given(escalationService.escalate(any(), any(), any(), any())).willReturn("TAC-999");
+    void chatDoesNotEscalateAutomaticallyWhenIntentUnknown() throws Exception {
+        given(intentService.classifyResolution(anyString(), anyBoolean())).willReturn(IntentResolution.single(new IntentResult("Unknown", 0.2), "rule-based fallback"));
+        given(playbookService.actionsFor(anyString())).willReturn(List.of("Upload logs", "Press Retry"));
 
         String payload = """
                 {
@@ -130,8 +123,39 @@ class SupportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("GUIDED"))
+                .andExpect(jsonPath("$.intent").value("Unknown"));
+
+        verify(escalationService, never()).escalate(any(), any(), any(), any());
+    }
+
+    @Test
+    void escalateJsonCreatesTicketAndReturnsSlaMessage() throws Exception {
+        given(logAnalysisService.analyze(anyString())).willReturn(new AnalysisResult(
+                "Push timeout",
+                "Check push channel",
+                "MEDIUM",
+                0.8,
+                List.of("push timeout")
+        ));
+        given(escalationService.escalate(any(), any(), any(), any())).willReturn("TAC-999");
+
+        String payload = """
+                {
+                  "query": "push still failing",
+                  "platform": "Android",
+                  "userId": "user-1",
+                  "deviceMetadata": {"model":"Pixel"}
+                }
+                """;
+
+        mockMvc.perform(post("/api/escalate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ESCALATED"))
-                .andExpect(jsonPath("$.escalationTicketId").value("TAC-999"));
+                .andExpect(jsonPath("$.escalationTicketId").value("TAC-999"))
+                .andExpect(jsonPath("$.message").value("Issue escalated successfully. Please wait for 3 working days and the support team will contact you."));
     }
 
     @Test
@@ -188,9 +212,9 @@ class SupportControllerTest {
 
         mockMvc.perform(get("/api/status/components"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statuses.backend").value("UP"))
-                .andExpect(jsonPath("$.statuses.deeppavlov").value("UP"))
-                .andExpect(jsonPath("$.statuses.opensearch").value("UP"))
-                .andExpect(jsonPath("$.statuses.jira").value("DOWN"));
+                .andExpect(jsonPath("$.components.backend.status").value("UP"))
+                .andExpect(jsonPath("$.components.deeppavlov.status").value("UP"))
+                .andExpect(jsonPath("$.components.opensearch.status").value("UP"))
+                .andExpect(jsonPath("$.components.jira.status").value("DOWN"));
     }
 }
