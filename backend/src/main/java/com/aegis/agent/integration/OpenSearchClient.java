@@ -22,10 +22,11 @@ import java.util.Objects;
 public class OpenSearchClient {
 
     private final AegisProperties properties;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
-    public OpenSearchClient(AegisProperties properties) {
+    public OpenSearchClient(AegisProperties properties, RestTemplate externalRestTemplate) {
         this.properties = properties;
+        this.restTemplate = externalRestTemplate;
     }
 
     public void indexEvent(String eventType, Map<String, Object> payload) {

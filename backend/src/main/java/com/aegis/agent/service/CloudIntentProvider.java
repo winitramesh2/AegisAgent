@@ -32,11 +32,12 @@ public class CloudIntentProvider {
     );
 
     private final AegisProperties properties;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public CloudIntentProvider(AegisProperties properties) {
+    public CloudIntentProvider(AegisProperties properties, RestTemplate externalRestTemplate) {
         this.properties = properties;
+        this.restTemplate = externalRestTemplate;
     }
 
     public IntentResult classify(String query) {
@@ -95,8 +96,8 @@ public class CloudIntentProvider {
         if (!(messageObj instanceof Map<?, ?> message)) {
             return null;
         }
-        Object contentObj = message.get("content");
-        if (!(contentObj instanceof String content) || content.isBlank()) {
+        String content = extractMessageContent(message.get("content"));
+        if (content == null || content.isBlank()) {
             return null;
         }
 
@@ -112,5 +113,26 @@ public class CloudIntentProvider {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractMessageContent(Object contentObj) {
+        if (contentObj instanceof String content) {
+            return content;
+        }
+        if (contentObj instanceof List<?> parts) {
+            StringBuilder builder = new StringBuilder();
+            for (Object part : parts) {
+                if (part instanceof Map<?, ?> mapPart) {
+                    Object text = mapPart.get("text");
+                    if (text instanceof String textValue) {
+                        builder.append(textValue);
+                    }
+                }
+            }
+            String merged = builder.toString();
+            return merged.isBlank() ? null : merged;
+        }
+        return null;
     }
 }

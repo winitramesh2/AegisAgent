@@ -12,6 +12,9 @@ data class ChatRequest(
     @SerialName("deviceMetadata") val deviceMetadata: Map<String, String>,
     @SerialName("troubleshootingFailed") val troubleshootingFailed: Boolean = false,
     @SerialName("retryAttempt") val retryAttempt: Boolean = false,
+    @SerialName("previousDiagnosis") val previousDiagnosis: String? = null,
+    @SerialName("attemptedActions") val attemptedActions: List<String>? = null,
+    @SerialName("attemptCount") val attemptCount: Int? = null,
     @SerialName("correlationId") val correlationId: String? = null,
     @SerialName("authProtocol") val authProtocol: String? = null
 )

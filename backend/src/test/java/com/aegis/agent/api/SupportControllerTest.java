@@ -106,6 +106,27 @@ class SupportControllerTest {
     }
 
     @Test
+    void chatReturnsNeedMoreInfoWithoutInvokingInferenceForLowInfoInput() throws Exception {
+        String payload = """
+                {
+                  "query": "🙂",
+                  "platform": "Android",
+                  "userId": "user-1",
+                  "deviceMetadata": {"model":"Pixel"}
+                }
+                """;
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("NEED_MORE_INFO"))
+                .andExpect(jsonPath("$.intent").value("Unknown"));
+
+        verify(intentService, never()).classifyResolution(anyString(), anyBoolean());
+    }
+
+    @Test
     void chatDoesNotEscalateAutomaticallyWhenIntentUnknown() throws Exception {
         given(intentService.classifyResolution(anyString(), anyBoolean())).willReturn(IntentResolution.single(new IntentResult("Unknown", 0.2), "rule-based fallback"));
         given(playbookService.actionsFor(anyString())).willReturn(List.of("Upload logs", "Press Retry"));
@@ -156,6 +177,34 @@ class SupportControllerTest {
                 .andExpect(jsonPath("$.status").value("ESCALATED"))
                 .andExpect(jsonPath("$.escalationTicketId").value("TAC-999"))
                 .andExpect(jsonPath("$.message").value("Issue escalated successfully. Please wait for 3 working days and the support team will contact you."));
+    }
+
+    @Test
+    void escalateJsonReturnsFailureStatusWhenEscalationCreationFails() throws Exception {
+        given(logAnalysisService.analyze(anyString())).willReturn(new AnalysisResult(
+                "Push timeout",
+                "Check push channel",
+                "MEDIUM",
+                0.8,
+                List.of("push timeout")
+        ));
+        given(escalationService.escalate(any(), any(), any(), any())).willThrow(new IllegalStateException("JIRA not configured"));
+
+        String payload = """
+                {
+                  "query": "push still failing",
+                  "platform": "Android",
+                  "userId": "user-1",
+                  "deviceMetadata": {"model":"Pixel"}
+                }
+                """;
+
+        mockMvc.perform(post("/api/escalate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ESCALATION_FAILED"))
+                .andExpect(jsonPath("$.message").value("Escalation could not be created right now. Please contact support administrator."));
     }
 
     @Test

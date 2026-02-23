@@ -40,8 +40,14 @@ public class IntentRoutingService implements IntentService {
             if (isKnown(cloudResult)) {
                 return IntentResolution.single(cloudResult, "cloud-only retry");
             }
-            IntentResult fallback = fallbackIntentService.classify(query);
-            return IntentResolution.single(fallback, "cloud-only retry with rule fallback");
+            if (isUsable(cloudResult)) {
+                return IntentResolution.single(cloudResult, "cloud-only retry low-confidence");
+            }
+            if (properties.isCloudOnlyRetryAllowFallback()) {
+                IntentResult fallback = fallbackIntentService.classify(query);
+                return IntentResolution.single(fallback, "cloud-only retry with rule fallback");
+            }
+            return IntentResolution.single(new IntentResult("Unknown", 0.0), "cloud-only unavailable");
         }
 
         IntentResult deepResult = deepPavlovIntentProvider.classify(query);

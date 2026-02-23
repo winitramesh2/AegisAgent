@@ -14,6 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class IntentRoutingServiceTest {
@@ -35,7 +38,8 @@ class IntentRoutingServiceTest {
     @BeforeEach
     void setUp() {
         routingService = new IntentRoutingService(deepPavlovIntentProvider, cloudIntentProvider, fallbackIntentService, properties);
-        given(properties.getConfidenceThreshold()).willReturn(0.8);
+        lenient().when(properties.getConfidenceThreshold()).thenReturn(0.8);
+        lenient().when(properties.isCloudOnlyRetryAllowFallback()).thenReturn(false);
     }
 
     @Test
@@ -83,6 +87,30 @@ class IntentRoutingServiceTest {
 
         assertEquals("ServerUnreachable", resolution.getPrimaryIntent().intent());
         assertEquals("cloud-only retry", resolution.getSourceSummary());
+    }
+
+    @Test
+    void classifyResolutionRetryReturnsUnknownWhenCloudUnavailableAndFallbackDisabled() {
+        given(cloudIntentProvider.classify(anyString())).willReturn(null);
+
+        IntentResolution resolution = routingService.classifyResolution("retry with prior context", true);
+
+        assertEquals("Unknown", resolution.getPrimaryIntent().intent());
+        assertEquals(0.0, resolution.getPrimaryIntent().confidence());
+        assertEquals("cloud-only unavailable", resolution.getSourceSummary());
+        verify(fallbackIntentService, never()).classify(anyString());
+    }
+
+    @Test
+    void classifyResolutionRetryUsesFallbackWhenEnabled() {
+        given(properties.isCloudOnlyRetryAllowFallback()).willReturn(true);
+        given(cloudIntentProvider.classify(anyString())).willReturn(null);
+        given(fallbackIntentService.classify(anyString())).willReturn(new IntentResult("Unknown", 0.2));
+
+        IntentResolution resolution = routingService.classifyResolution("retry with prior context", true);
+
+        assertEquals("Unknown", resolution.getPrimaryIntent().intent());
+        assertEquals("cloud-only retry with rule fallback", resolution.getSourceSummary());
     }
 
     @Test

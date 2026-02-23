@@ -36,6 +36,10 @@ public class AegisProperties {
     private String cloudIntentUrl;
     private String cloudIntentApiKey;
     private String cloudIntentModel = "gpt-4o-mini";
+    private boolean cloudOnlyRetryAllowFallback;
+
+    private boolean apiAuthEnabled;
+    private String apiAuthKey;
 
     private boolean jiraValidationOnStartup;
     private boolean failOnJiraValidation;
@@ -238,6 +242,30 @@ public class AegisProperties {
 
     public void setCloudIntentModel(String cloudIntentModel) {
         this.cloudIntentModel = cloudIntentModel;
+    }
+
+    public boolean isCloudOnlyRetryAllowFallback() {
+        return cloudOnlyRetryAllowFallback;
+    }
+
+    public void setCloudOnlyRetryAllowFallback(boolean cloudOnlyRetryAllowFallback) {
+        this.cloudOnlyRetryAllowFallback = cloudOnlyRetryAllowFallback;
+    }
+
+    public boolean isApiAuthEnabled() {
+        return apiAuthEnabled;
+    }
+
+    public void setApiAuthEnabled(boolean apiAuthEnabled) {
+        this.apiAuthEnabled = apiAuthEnabled;
+    }
+
+    public String getApiAuthKey() {
+        return apiAuthKey;
+    }
+
+    public void setApiAuthKey(String apiAuthKey) {
+        this.apiAuthKey = apiAuthKey;
     }
 
     public boolean isJiraValidationOnStartup() {

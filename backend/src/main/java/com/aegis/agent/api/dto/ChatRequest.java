@@ -26,6 +26,12 @@ public class ChatRequest {
 
     private boolean retryAttempt;
 
+    private String previousDiagnosis;
+
+    private List<String> attemptedActions;
+
+    private Integer attemptCount;
+
     private String correlationId;
 
     private String authProtocol;
@@ -94,6 +100,30 @@ public class ChatRequest {
 
     public void setRetryAttempt(boolean retryAttempt) {
         this.retryAttempt = retryAttempt;
+    }
+
+    public String getPreviousDiagnosis() {
+        return previousDiagnosis;
+    }
+
+    public void setPreviousDiagnosis(String previousDiagnosis) {
+        this.previousDiagnosis = previousDiagnosis;
+    }
+
+    public List<String> getAttemptedActions() {
+        return attemptedActions;
+    }
+
+    public void setAttemptedActions(List<String> attemptedActions) {
+        this.attemptedActions = attemptedActions;
+    }
+
+    public Integer getAttemptCount() {
+        return attemptCount;
+    }
+
+    public void setAttemptCount(Integer attemptCount) {
+        this.attemptCount = attemptCount;
     }
 
     public String getCorrelationId() {

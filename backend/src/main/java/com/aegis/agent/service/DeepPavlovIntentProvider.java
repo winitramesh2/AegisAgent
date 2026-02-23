@@ -17,10 +17,11 @@ import java.util.Map;
 public class DeepPavlovIntentProvider {
 
     private final AegisProperties properties;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
-    public DeepPavlovIntentProvider(AegisProperties properties) {
+    public DeepPavlovIntentProvider(AegisProperties properties, RestTemplate externalRestTemplate) {
         this.properties = properties;
+        this.restTemplate = externalRestTemplate;
     }
 
     public IntentResult classify(String query) {

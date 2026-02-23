@@ -22,16 +22,17 @@ import java.util.stream.Collectors;
 @Component
 public class JiraClient {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final AegisProperties properties;
 
-    public JiraClient(AegisProperties properties) {
+    public JiraClient(AegisProperties properties, RestTemplate externalRestTemplate) {
         this.properties = properties;
+        this.restTemplate = externalRestTemplate;
     }
 
     public String createTicketAndAttachLog(ChatRequest request, AnalysisResult result, byte[] rawLog, String fileName) {
         if (properties.getJiraBaseUrl() == null || properties.getJiraBaseUrl().isBlank()) {
-            return properties.getProjectKey() + "-" + (1000 + (int) (Math.random() * 9000));
+            throw new IllegalStateException("JIRA is not configured. Set JIRA_BASE_URL and credentials to enable escalation ticket creation.");
         }
 
         String issueKey = createIssue(request, result);

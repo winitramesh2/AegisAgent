@@ -37,6 +37,7 @@ data class AegisUiState(
     val hybridResult: HybridDiagnosis? = null,
     val hybridLoading: Boolean = false,
     val hybridError: String? = null,
+    val retryCount: Int = 0,
     val correlationId: String = UUID.randomUUID().toString()
 )
 
@@ -50,7 +51,7 @@ class AegisViewModel(
     private var hybridEngine: HybridAiEngine? = null
 
     fun onQueryChange(query: String) {
-        _ui.value = _ui.value.copy(query = query, error = null, hybridError = null)
+        _ui.value = _ui.value.copy(query = query, error = null, hybridError = null, retryCount = 0)
     }
 
     fun loadComponentStatus() {
@@ -77,7 +78,7 @@ class AegisViewModel(
             runCatching {
                 api.chat(buildRequest(query = current.query, correlationId = current.correlationId, retryAttempt = false))
             }.onSuccess { chat ->
-                _ui.value = _ui.value.copy(loading = false, chat = chat, correlationId = chat.correlationId)
+                _ui.value = _ui.value.copy(loading = false, chat = chat, correlationId = chat.correlationId, retryCount = 0)
             }.onFailure { ex ->
                 _ui.value = _ui.value.copy(loading = false, error = ex.message ?: "Chat request failed")
             }
@@ -96,13 +97,27 @@ class AegisViewModel(
             return
         }
 
-        val retryPrompt = buildRetryPrompt(current.query, previous)
+        val nextAttemptCount = current.retryCount + 1
         viewModelScope.launch {
             _ui.value = current.copy(loading = true, error = null)
             runCatching {
-                api.chat(buildRequest(query = retryPrompt, correlationId = current.correlationId, retryAttempt = true))
+                api.chat(
+                    buildRequest(
+                        query = current.query,
+                        correlationId = current.correlationId,
+                        retryAttempt = true,
+                        previousDiagnosis = previous.message,
+                        attemptedActions = previous.actions,
+                        attemptCount = nextAttemptCount
+                    )
+                )
             }.onSuccess { chat ->
-                _ui.value = _ui.value.copy(loading = false, chat = chat, correlationId = chat.correlationId)
+                _ui.value = _ui.value.copy(
+                    loading = false,
+                    chat = chat,
+                    correlationId = chat.correlationId,
+                    retryCount = nextAttemptCount
+                )
             }.onFailure { ex ->
                 _ui.value = _ui.value.copy(loading = false, error = ex.message ?: "Retry request failed")
             }
@@ -197,7 +212,10 @@ class AegisViewModel(
         query: String,
         correlationId: String,
         retryAttempt: Boolean = false,
-        troubleshootingFailed: Boolean = false
+        troubleshootingFailed: Boolean = false,
+        previousDiagnosis: String? = null,
+        attemptedActions: List<String>? = null,
+        attemptCount: Int? = null
     ): ChatRequest {
         return ChatRequest(
             query = query,
@@ -206,6 +224,9 @@ class AegisViewModel(
             authProtocol = "totp",
             troubleshootingFailed = troubleshootingFailed,
             retryAttempt = retryAttempt,
+            previousDiagnosis = previousDiagnosis,
+            attemptedActions = attemptedActions,
+            attemptCount = attemptCount,
             correlationId = correlationId,
             deviceMetadata = mapOf(
                 "model" to Build.MODEL,
@@ -213,22 +234,5 @@ class AegisViewModel(
                 "manufacturer" to Build.MANUFACTURER
             )
         )
-    }
-
-    private fun buildRetryPrompt(query: String, previous: ChatResponse): String {
-        val previousActions = if (previous.actions.isEmpty()) {
-            "- No prior actions listed"
-        } else {
-            previous.actions.joinToString(separator = "\n") { "- $it" }
-        }
-        return buildString {
-            appendLine(query)
-            appendLine()
-            appendLine("Previous diagnosis:")
-            appendLine(previous.message)
-            appendLine()
-            appendLine("Previous actions already attempted:")
-            appendLine(previousActions)
-        }
     }
 }

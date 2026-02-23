@@ -33,6 +33,9 @@ aegis:
   cloud-intent-url: ${CLOUD_INTENT_URL:https://api.openai.com/v1/chat/completions}
   cloud-intent-api-key: ${CLOUD_INTENT_API_KEY:}
   cloud-intent-model: ${CLOUD_INTENT_MODEL:gpt-4o-mini}
+  cloud-only-retry-allow-fallback: ${CLOUD_ONLY_RETRY_ALLOW_FALLBACK:false}
+  api-auth-enabled: ${API_AUTH_ENABLED:false}
+  api-auth-key: ${API_AUTH_KEY:}
   jira-validation-on-startup: ${JIRA_VALIDATE_ON_STARTUP:false}
   fail-on-jira-validation: ${JIRA_FAIL_ON_VALIDATION:false}
 

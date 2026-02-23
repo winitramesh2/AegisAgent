@@ -17,10 +17,14 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://api.example.com/api/\"")
+        buildConfigField("String", "API_AUTH_KEY", "\"\"")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

@@ -79,9 +79,6 @@ public class SupportController {
                 : request.getCorrelationId();
         request.setCorrelationId(correlationId);
 
-        IntentResolution resolution = intentService.classifyResolution(request.getQuery(), request.isRetryAttempt());
-        IntentResult intent = resolution.getPrimaryIntent();
-
         ChatResponse response = new ChatResponse();
         response.setCorrelationId(correlationId);
 
@@ -98,6 +95,9 @@ public class SupportController {
             indexChatEvent("CHAT_NEED_MORE_INFO", request, new IntentResult("Unknown", 0.0), null, null);
             return response;
         }
+
+        IntentResolution resolution = intentService.classifyResolution(buildInferenceInput(request), request.isRetryAttempt());
+        IntentResult intent = resolution.getPrimaryIntent();
 
         response.setIntent(intent.intent());
         response.setConfidence(intent.confidence());
@@ -135,6 +135,27 @@ public class SupportController {
             merged.addAll(playbookService.actionsFor(resolution.getSecondaryIntent().intent()));
         }
         return merged.stream().limit(5).toList();
+    }
+
+    private String buildInferenceInput(ChatRequest request) {
+        if (!request.isRetryAttempt()) {
+            return request.getQuery();
+        }
+
+        StringBuilder builder = new StringBuilder(request.getQuery() == null ? "" : request.getQuery());
+        if (request.getPreviousDiagnosis() != null && !request.getPreviousDiagnosis().isBlank()) {
+            builder.append("\n\nPrevious diagnosis:\n").append(request.getPreviousDiagnosis());
+        }
+        if (request.getAttemptedActions() != null && !request.getAttemptedActions().isEmpty()) {
+            builder.append("\n\nAttempted actions:\n");
+            for (String action : request.getAttemptedActions()) {
+                builder.append("- ").append(action).append("\n");
+            }
+        }
+        if (request.getAttemptCount() != null && request.getAttemptCount() > 0) {
+            builder.append("\nRetry attempt number: ").append(request.getAttemptCount());
+        }
+        return builder.toString();
     }
 
     private boolean isLowInformationQuery(String query) {
@@ -185,7 +206,20 @@ public class SupportController {
         String rawLog = logFile == null ? request.getQuery() : new String(logBytes);
         AnalysisResult analysis = logAnalysisService.analyze(rawLog);
 
-        String ticket = escalationService.escalate(request, analysis, logBytes, logFile == null ? null : logFile.getOriginalFilename());
+        String ticket;
+        try {
+            ticket = escalationService.escalate(request, analysis, logBytes, logFile == null ? null : logFile.getOriginalFilename());
+        } catch (RuntimeException ex) {
+            ChatResponse failed = new ChatResponse();
+            failed.setStatus("ESCALATION_FAILED");
+            failed.setIntent("Escalation");
+            failed.setConfidence(0.0);
+            failed.setCorrelationId(correlationId);
+            failed.setMessage("Escalation could not be created right now. Please contact support administrator.");
+            failed.setActions(List.of("Verify JIRA/SMTP configuration", "Retry escalation after configuration is fixed"));
+            indexChatEvent("MANUAL_ESCALATION_FAILED", request, new IntentResult("Escalation", 0.0), analysis, null);
+            return failed;
+        }
 
         ChatResponse response = new ChatResponse();
         response.setStatus("ESCALATED");
@@ -208,7 +242,21 @@ public class SupportController {
         request.setCorrelationId(correlationId);
 
         AnalysisResult analysis = logAnalysisService.analyze(request.getQuery());
-        String ticket = escalationService.escalate(request, analysis, null, null);
+
+        String ticket;
+        try {
+            ticket = escalationService.escalate(request, analysis, null, null);
+        } catch (RuntimeException ex) {
+            ChatResponse failed = new ChatResponse();
+            failed.setStatus("ESCALATION_FAILED");
+            failed.setIntent("Escalation");
+            failed.setConfidence(0.0);
+            failed.setCorrelationId(correlationId);
+            failed.setMessage("Escalation could not be created right now. Please contact support administrator.");
+            failed.setActions(List.of("Verify JIRA/SMTP configuration", "Retry escalation after configuration is fixed"));
+            indexChatEvent("MANUAL_ESCALATION_FAILED", request, new IntentResult("Escalation", 0.0), analysis, null);
+            return failed;
+        }
 
         ChatResponse response = new ChatResponse();
         response.setStatus("ESCALATED");

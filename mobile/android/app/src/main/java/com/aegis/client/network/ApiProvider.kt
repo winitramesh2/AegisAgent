@@ -14,9 +14,23 @@ object ApiProvider {
         explicitNulls = false
     }
 
+    private val client = OkHttpClient.Builder()
+        .addInterceptor { chain ->
+            val original = chain.request()
+            val key = BuildConfig.API_AUTH_KEY
+            if (key.isBlank()) {
+                return@addInterceptor chain.proceed(original)
+            }
+            val updated = original.newBuilder()
+                .addHeader("X-API-Key", key)
+                .build()
+            chain.proceed(updated)
+        }
+        .build()
+
     private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.API_BASE_URL)
-        .client(OkHttpClient.Builder().build())
+        .client(client)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
 
