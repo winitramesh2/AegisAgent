@@ -18,6 +18,7 @@ import com.aegis.agent.service.DeepPavlovIntentProvider;
 import com.aegis.agent.service.IntentService;
 import com.aegis.agent.service.LogAnalysisService;
 import com.aegis.agent.service.PlaybookService;
+import com.aegis.agent.service.SensitiveDataSanitizer;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.core.env.Environment;
@@ -39,6 +40,7 @@ import java.util.regex.Pattern;
 public class SupportController {
 
     private static final Pattern LETTER_PATTERN = Pattern.compile("[A-Za-z]");
+    private static final long COMPONENT_STATUS_CACHE_MS = 15_000L;
 
     private final IntentService intentService;
     private final LogAnalysisService logAnalysisService;
@@ -49,6 +51,11 @@ public class SupportController {
     private final JiraClient jiraClient;
     private final DeepPavlovIntentProvider deepPavlovIntentProvider;
     private final Environment environment;
+    private final SensitiveDataSanitizer sanitizer;
+
+    private final Object componentStatusLock = new Object();
+    private volatile long componentStatusCachedAt;
+    private volatile ComponentStatusResponse componentStatusCachedValue;
 
     public SupportController(
             IntentService intentService,
@@ -59,7 +66,8 @@ public class SupportController {
             OpenSearchClient openSearchClient,
             JiraClient jiraClient,
             DeepPavlovIntentProvider deepPavlovIntentProvider,
-            Environment environment
+            Environment environment,
+            SensitiveDataSanitizer sanitizer
     ) {
         this.intentService = intentService;
         this.logAnalysisService = logAnalysisService;
@@ -70,6 +78,7 @@ public class SupportController {
         this.jiraClient = jiraClient;
         this.deepPavlovIntentProvider = deepPavlovIntentProvider;
         this.environment = environment;
+        this.sanitizer = sanitizer;
     }
 
     @PostMapping("/chat")
@@ -305,6 +314,25 @@ public class SupportController {
 
     @GetMapping("/status/components")
     public ComponentStatusResponse componentStatus() {
+        long now = System.currentTimeMillis();
+        ComponentStatusResponse cached = componentStatusCachedValue;
+        if (cached != null && now - componentStatusCachedAt < COMPONENT_STATUS_CACHE_MS) {
+            return cached;
+        }
+
+        synchronized (componentStatusLock) {
+            long current = System.currentTimeMillis();
+            if (componentStatusCachedValue != null && current - componentStatusCachedAt < COMPONENT_STATUS_CACHE_MS) {
+                return componentStatusCachedValue;
+            }
+            ComponentStatusResponse rebuilt = buildComponentStatus();
+            componentStatusCachedValue = rebuilt;
+            componentStatusCachedAt = current;
+            return rebuilt;
+        }
+    }
+
+    private ComponentStatusResponse buildComponentStatus() {
         Map<String, ComponentStatusItem> components = new HashMap<>();
         components.put("backend", new ComponentStatusItem("UP", "http://localhost:8080/actuator/health", "Core API"));
         components.put("deeppavlov", new ComponentStatusItem(
@@ -356,13 +384,14 @@ public class SupportController {
         event.put("intent", intent.intent());
         event.put("confidence", intent.confidence());
         event.put("ticketId", ticket);
-        event.put("userId", request.getUserId());
-        event.put("authProtocol", request.getAuthProtocol());
-        event.put("challengeId", request.getChallengeId());
-        event.put("priority", request.getPriority());
+        event.put("userRef", sanitizer.pseudonymize(request.getUserId()));
+        event.put("authProtocol", sanitizer.sanitize(request.getAuthProtocol()));
+        event.put("challengeId", sanitizer.sanitize(request.getChallengeId()));
+        event.put("priority", sanitizer.sanitize(request.getPriority()));
+        event.put("attemptCount", request.getAttemptCount());
         if (analysis != null) {
-            event.put("rootCause", analysis.rootCause());
-            event.put("fixAction", analysis.fixAction());
+            event.put("rootCause", sanitizer.sanitize(analysis.rootCause()));
+            event.put("fixAction", sanitizer.sanitize(analysis.fixAction()));
         }
         openSearchClient.indexEvent(eventType, event);
     }

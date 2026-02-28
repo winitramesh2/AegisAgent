@@ -12,6 +12,7 @@ import com.aegis.agent.service.EscalationService;
 import com.aegis.agent.service.IntentService;
 import com.aegis.agent.service.LogAnalysisService;
 import com.aegis.agent.service.PlaybookService;
+import com.aegis.agent.service.SensitiveDataSanitizer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -60,6 +61,9 @@ class SupportControllerTest {
 
     @MockBean
     private DeepPavlovIntentProvider deepPavlovIntentProvider;
+
+    @MockBean
+    private SensitiveDataSanitizer sensitiveDataSanitizer;
 
     @Test
     void chatReturnsGuidedResponseWhenConfidenceHigh() throws Exception {
@@ -124,6 +128,53 @@ class SupportControllerTest {
                 .andExpect(jsonPath("$.intent").value("Unknown"));
 
         verify(intentService, never()).classifyResolution(anyString(), anyBoolean());
+    }
+
+    @Test
+    void chatReturnsUnauthorizedWhenApiKeyIsMissingAndAuthEnabled() throws Exception {
+        given(properties.isApiAuthEnabled()).willReturn(true);
+        given(properties.getApiAuthKey()).willReturn("unit-test-key");
+
+        String payload = """
+                {
+                  "query": "otp not generating",
+                  "platform": "Android",
+                  "userId": "user-1",
+                  "deviceMetadata": {"model":"Pixel"}
+                }
+                """;
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isUnauthorized());
+
+        verify(intentService, never()).classifyResolution(anyString(), anyBoolean());
+    }
+
+    @Test
+    void chatSucceedsWhenApiKeyIsProvidedAndAuthEnabled() throws Exception {
+        given(properties.isApiAuthEnabled()).willReturn(true);
+        given(properties.getApiAuthKey()).willReturn("unit-test-key");
+        given(intentService.classifyResolution(anyString(), anyBoolean()))
+                .willReturn(IntentResolution.single(new IntentResult("GenerateOTP", 0.92), "cloud-primary with DeepPavlov confirmation"));
+        given(playbookService.actionsFor(anyString())).willReturn(List.of("Sync time", "Retry OTP"));
+
+        String payload = """
+                {
+                  "query": "otp not generating",
+                  "platform": "Android",
+                  "userId": "user-1",
+                  "deviceMetadata": {"model":"Pixel"}
+                }
+                """;
+
+        mockMvc.perform(post("/api/chat")
+                        .header("X-API-Key", "unit-test-key")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("GUIDED"));
     }
 
     @Test

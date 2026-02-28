@@ -4,6 +4,7 @@ import com.aegis.agent.api.dto.ChatRequest;
 import com.aegis.agent.api.dto.JiraValidationResponse;
 import com.aegis.agent.config.AegisProperties;
 import com.aegis.agent.domain.AnalysisResult;
+import com.aegis.agent.service.SensitiveDataSanitizer;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -24,10 +25,16 @@ public class JiraClient {
 
     private final RestTemplate restTemplate;
     private final AegisProperties properties;
+    private final SensitiveDataSanitizer sanitizer;
 
-    public JiraClient(AegisProperties properties, RestTemplate externalRestTemplate) {
+    public JiraClient(
+            AegisProperties properties,
+            RestTemplate externalRestTemplate,
+            SensitiveDataSanitizer sanitizer
+    ) {
         this.properties = properties;
         this.restTemplate = externalRestTemplate;
+        this.sanitizer = sanitizer;
     }
 
     public String createTicketAndAttachLog(ChatRequest request, AnalysisResult result, byte[] rawLog, String fileName) {
@@ -201,7 +208,8 @@ public class JiraClient {
 
         Map<String, Object> fields = new HashMap<>();
         fields.put("project", Map.of("key", properties.getProjectKey()));
-        fields.put("summary", "[Aegis] " + result.rootCause() + " - " + request.getPlatform());
+        String summary = "[Aegis] " + sanitizer.sanitize(result.rootCause()) + " - " + request.getPlatform();
+        fields.put("summary", summary.length() > 240 ? summary.substring(0, 240) : summary);
         fields.put("issuetype", Map.of("name", properties.getJiraIssueType()));
         fields.put("description", buildDescription(request, result));
 
@@ -275,11 +283,11 @@ public class JiraClient {
     }
 
     private String buildDescription(ChatRequest request, AnalysisResult result) {
-        return "User: " + request.getUserId()
+        return "UserRef: " + sanitizer.pseudonymize(request.getUserId())
                 + "\nPlatform: " + request.getPlatform()
-                + "\nQuery: " + request.getQuery()
-                + "\nRoot cause: " + result.rootCause()
-                + "\nFix action: " + result.fixAction()
+                + "\nQuery: " + sanitizer.sanitize(request.getQuery())
+                + "\nRoot cause: " + sanitizer.sanitize(result.rootCause())
+                + "\nFix action: " + sanitizer.sanitize(result.fixAction())
                 + "\nCorrelation ID: " + request.getCorrelationId();
     }
 }

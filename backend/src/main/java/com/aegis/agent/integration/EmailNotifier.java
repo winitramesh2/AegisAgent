@@ -3,6 +3,7 @@ package com.aegis.agent.integration;
 import com.aegis.agent.api.dto.ChatRequest;
 import com.aegis.agent.config.AegisProperties;
 import com.aegis.agent.domain.AnalysisResult;
+import com.aegis.agent.service.SensitiveDataSanitizer;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
@@ -12,10 +13,12 @@ public class EmailNotifier {
 
     private final JavaMailSender mailSender;
     private final AegisProperties properties;
+    private final SensitiveDataSanitizer sanitizer;
 
-    public EmailNotifier(JavaMailSender mailSender, AegisProperties properties) {
+    public EmailNotifier(JavaMailSender mailSender, AegisProperties properties, SensitiveDataSanitizer sanitizer) {
         this.mailSender = mailSender;
         this.properties = properties;
+        this.sanitizer = sanitizer;
     }
 
     public void notifyEscalation(ChatRequest request, AnalysisResult result) {
@@ -32,11 +35,11 @@ public class EmailNotifier {
 
     private String buildBody(ChatRequest request, AnalysisResult result) {
         return "Aegis escalation\n"
-                + "User: " + request.getUserId() + "\n"
+                + "UserRef: " + sanitizer.pseudonymize(request.getUserId()) + "\n"
                 + "Platform: " + request.getPlatform() + "\n"
-                + "Query: " + request.getQuery() + "\n"
-                + "Root cause: " + result.rootCause() + "\n"
-                + "Fix action: " + result.fixAction() + "\n"
+                + "Query: " + sanitizer.sanitize(request.getQuery()) + "\n"
+                + "Root cause: " + sanitizer.sanitize(result.rootCause()) + "\n"
+                + "Fix action: " + sanitizer.sanitize(result.fixAction()) + "\n"
                 + "Correlation ID: " + request.getCorrelationId();
     }
 }

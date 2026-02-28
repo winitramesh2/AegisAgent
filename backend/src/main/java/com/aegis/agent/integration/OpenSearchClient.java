@@ -1,6 +1,7 @@
 package com.aegis.agent.integration;
 
 import com.aegis.agent.config.AegisProperties;
+import com.aegis.agent.service.SensitiveDataSanitizer;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,10 +24,16 @@ public class OpenSearchClient {
 
     private final AegisProperties properties;
     private final RestTemplate restTemplate;
+    private final SensitiveDataSanitizer sanitizer;
 
-    public OpenSearchClient(AegisProperties properties, RestTemplate externalRestTemplate) {
+    public OpenSearchClient(
+            AegisProperties properties,
+            RestTemplate externalRestTemplate,
+            SensitiveDataSanitizer sanitizer
+    ) {
         this.properties = properties;
         this.restTemplate = externalRestTemplate;
+        this.sanitizer = sanitizer;
     }
 
     public void indexEvent(String eventType, Map<String, Object> payload) {
@@ -36,7 +43,7 @@ public class OpenSearchClient {
 
         String url = properties.getOpenSearchUrl() + "/" + properties.getOpenSearchIndex() + "/_doc";
 
-        Map<String, Object> document = new HashMap<>(payload);
+        Map<String, Object> document = new HashMap<>(sanitizer.sanitizeMap(payload));
         document.put("eventType", eventType);
         document.put("timestamp", Instant.now().toString());
 
